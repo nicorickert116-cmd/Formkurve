@@ -286,6 +286,10 @@ th.n{text-align:right}
 .restchip{font:600 12px/1 var(--font-data);letter-spacing:-.02em;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 9px;min-height:28px}
 .restchip[aria-expanded="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .chip svg{width:16px;height:16px;flex:none}.btn svg{width:18px;height:18px;flex:none}
+.restchip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.set.uni{grid-template-columns:22px minmax(0,1fr) 62px 46px 46px 44px;gap:6px}
+.set.uni .chk{width:44px}
+.set.head.uni span:nth-child(n+3){text-align:center}
 </style>
 </head>
 <body>
@@ -476,10 +480,15 @@ const LIB_RAW = [
 ];
 // Grundübungen: mehrgelenkig, viel Muskelmasse, brauchen längere Pausen
 const COMPOUND = new Set(["bankdruecken", "schraegbank_lh", "negativbank", "bank_kh", "schraeg_kh", "brustpresse", "liegestuetz", "dips", "klimmzuege", "chinups", "rudern_hang", "latziehen", "latziehen_eng", "lh_rudern", "kh_rudern", "kabelrudern", "tbar", "kreuzheben", "ohp", "kh_schulter", "schulter_maschine", "arnold", "landmine", "enges_bank", "bankdips", "kniebeuge", "frontkniebeuge", "beinpresse", "hackenschmidt", "goblet", "ausfallschritte", "bulgarian", "stepups", "rumaenisch", "rumaenisch_kh", "sumo", "hip_thrust", "kb_swing", "power_clean", "thruster", "kb_clean_press"]);
-const LIB = LIB_RAW.map(([id, name, group, eq, sets, lo, hi, inc, rest, f = '']) => ({ id, name, group, eq, sets, lo, hi, inc, rest, bar: f.includes('b'), bw: f.includes('k'), typ: COMPOUND.has(id) ? 'grund' : 'iso' }));
+// einarmig / einseitig: Wiederholungen je Satz für links und rechts getrennt
+const UNILATERAL = new Set(["kh_rudern", "konzentration", "bulgarian", "stepups"]);
+const LIB = LIB_RAW.map(([id, name, group, eq, sets, lo, hi, inc, rest, f = '']) => ({ id, name, group, eq, sets, lo, hi, inc, rest, bar: f.includes('b'), bw: f.includes('k'), typ: COMPOUND.has(id) ? 'grund' : 'iso', uni: UNILATERAL.has(id) }));
 const libEx = id => LIB.find(x => x.id === id);
-function exd(id, name, sets, lo, hi, inc, rest, o = {}) { return { id, name, sets, lo, hi, inc, rest, bar: !!o.bar, bw: !!o.bw, start: null, group: o.group || '', typ: o.typ || ((o.bar || o.bw) ? 'grund' : 'iso') }; }
-function exFromLib(id) { const x = libEx(id); return x ? exd(x.id, x.name, x.sets, x.lo, x.hi, x.inc, x.rest, { bar: x.bar, bw: x.bw, group: x.group, typ: x.typ }) : null; }
+function exd(id, name, sets, lo, hi, inc, rest, o = {}) { return { id, name, sets, lo, hi, inc, rest, bar: !!o.bar, bw: !!o.bw, start: null, group: o.group || '', typ: o.typ || ((o.bar || o.bw) ? 'grund' : 'iso'), uni: !!o.uni }; }
+function exFromLib(id) { const x = libEx(id); return x ? exd(x.id, x.name, x.sets, x.lo, x.hi, x.inc, x.rest, { bar: x.bar, bw: x.bw, group: x.group, typ: x.typ, uni: x.uni }) : null; }
+/* Satz-Anzeige: 20×10, bei einarmig 20×10/9 (links/rechts), KG = nur Körpergewicht */
+function fmtSet(bw, x) { if (!x) return '–'; const w = bw && !x.w ? 'KG' : fmtKg(x.w); return w + '×' + (x.rl != null && x.rr != null ? x.rl + '/' + x.rr : x.r); }
+function setReps(x) { return x.rl != null && x.rr != null ? x.rl + x.rr : x.r || 0; }
 /* Grund- oder Isolationsübung: eigene Angabe, sonst Bibliothek, sonst Langhantel/Körpergewicht = Grundübung */
 function exTyp(e) { if (e && (e.typ === 'grund' || e.typ === 'iso')) return e.typ; const x = e && libEx(e.id); if (x) return x.typ; return e && (e.bar || e.bw) ? 'grund' : 'iso'; }
 const REST_TABLE = [['bis 5', 5, 180, 120], ['6–8', 8, 150, 90], ['9–12', 12, 120, 90], ['ab 13', 999, 90, 60]];
@@ -599,7 +608,7 @@ function bestE1(exId, excludeId) {
   }
   return best;
 }
-function sessVolume(s) { let v = 0; for (const e of s.ex || []) for (const st of e.sets || []) v += loadOf(e, st.w) * (st.r || 0); return v; }
+function sessVolume(s) { let v = 0; for (const e of s.ex || []) for (const st of e.sets || []) v += loadOf(e, st.w) * setReps(st); return v; }
 function sessSets(s) { let n = 0; for (const e of s.ex || []) n += (e.sets || []).length; return n; }
 function sessMetric(s) {
   if (s.kind === 'kraft') return { main: fmtInt(sessVolume(s)) + ' kg', sub: sessSets(s) + ' Sätze' };
@@ -732,8 +741,9 @@ function buildExercise(c, excludeId) {
   return {
     id: c.id, name: c.name, bw: !!c.bw, bar: !!c.bar, lo: c.lo, hi: c.hi, inc: c.inc, rest: c.rest, startW: c.start, typ: exTyp(c),
     sug: { mode: sug.mode, text: sug.text },
-    prev: last ? last.sets.map(s => ({ w: s.w, r: s.r })) : [],
-    sets: Array.from({ length: Math.max(1, c.sets) }, (_, i) => ({ w: sug.w, r: null, tr: sug.reps[i] != null ? sug.reps[i] : c.lo, done: false }))
+    uni: !!c.uni,
+    prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, rl: s.rl, rr: s.rr })) : [],
+    sets: Array.from({ length: Math.max(1, c.sets) }, (_, i) => ({ w: sug.w, r: null, rl: null, rr: null, tr: sug.reps[i] != null ? sug.reps[i] : c.lo, done: false }))
   };
 }
 function startSession(tplId, dateKey, mode) {
@@ -779,7 +789,8 @@ function syncActive() {
   a.ex.forEach(e => {
     const c = t.exercises.find(x => x.id === e.id); if (!c) return;
     const prog = e.lo !== c.lo || e.hi !== c.hi || e.inc !== c.inc || e.bw !== !!c.bw || e.startW !== c.start;
-    if (!prog && e.rest === c.rest && e.name === c.name && e.bar === !!c.bar && e.typ === exTyp(c)) return;
+    if (!prog && e.rest === c.rest && e.name === c.name && e.bar === !!c.bar && e.typ === exTyp(c) && !!e.uni === !!c.uni) return;
+    if (!!e.uni !== !!c.uni) setExUniLocal(e, !!c.uni);
     Object.assign(e, { name: c.name, lo: c.lo, hi: c.hi, inc: c.inc, rest: c.rest, bar: !!c.bar, bw: !!c.bw, startW: c.start, typ: exTyp(c) }); ch = true;
     if (prog) {
       const last = lastEntry(e.id, a.id), sg = suggest({ ...c, sets: e.sets.length }, last ? last.sets : null);
@@ -790,14 +801,24 @@ function syncActive() {
   if (ch) saveActive();
 }
 function touch() { saveActive(); commit(); }
-function addSet(ei) { const e = S.active.ex[ei]; const l = e.sets[e.sets.length - 1]; e.sets.push({ w: l ? l.w : null, r: null, tr: l ? (l.r || l.tr) : e.lo, done: false }); touch(); }
+function addSet(ei) { const e = S.active.ex[ei]; const l = e.sets[e.sets.length - 1]; e.sets.push({ w: l ? l.w : null, r: null, rl: null, rr: null, tr: l ? (l.r || l.tr) : e.lo, done: false }); touch(); }
+function setExUniLocal(e, v) {
+  e.uni = v;
+  e.sets.forEach(s => { if (v) { if (s.done) { s.rl = s.rl != null ? s.rl : s.r; s.rr = s.rr != null ? s.rr : s.r; } } else if (s.rl != null || s.rr != null) { s.r = s.done ? Math.min(s.rl != null ? s.rl : s.tr, s.rr != null ? s.rr : s.tr) : s.r; s.rl = null; s.rr = null; } });
+}
+function setExUni(e, v) {
+  setExUniLocal(e, v);
+  const t = tpl(S.active && S.active.tpl), c = t && (t.exercises || []).find(x => x.id === e.id);
+  if (c) { c.uni = v; saveSettings(); } touch();
+}
 function removeSet(ei) { const e = S.active.ex[ei]; if (e.sets.length > 1) { e.sets.pop(); touch(); } }
 function removeExercise(ei) { S.active.ex.splice(ei, 1); touch(); }
 function addExercise(cfg) { S.active.ex.push(buildExercise(cfg, S.active.id)); S.sheet = null; touch(); }
 function toggleSet(ei, si) {
   const a = S.active, e = a.ex[ei], s = e.sets[si];
   if (s.done) { s.done = false; s.pr = false; touch(); return; }
-  if (s.r == null) s.r = s.tr;
+  if (e.uni) { if (s.rl == null) s.rl = s.tr; if (s.rr == null) s.rr = s.tr; s.r = Math.min(s.rl, s.rr); }
+  else if (s.r == null) s.r = s.tr;
   if (s.w == null && e.bw) s.w = 0;
   if (s.w == null) { toast('Trag erst das Gewicht ein'); return; }
   if (!(s.r > 0)) { toast('Trag die Wiederholungen ein'); return; }
@@ -822,8 +843,8 @@ function cleanSession(a) {
   o.end = dur ? o.start + dur * 60000 : o.end || Date.now();
   delete o.editing; delete o.origMonth; delete o.log; delete o.durMin;
   if (o.kind === 'kraft') {
-    o.ex = (o.ex || []).map(e => ({ id: e.id, name: e.name, bw: !!e.bw, bar: !!e.bar, lo: e.lo, hi: e.hi, inc: e.inc,
-      sets: e.sets.filter(s => s.done).map(s => (s.pr ? { w: s.w, r: s.r, pr: 1 } : { w: s.w, r: s.r })) })).filter(e => e.sets.length);
+    o.ex = (o.ex || []).map(e => ({ id: e.id, name: e.name, bw: !!e.bw, bar: !!e.bar, lo: e.lo, hi: e.hi, inc: e.inc, ...(e.uni ? { uni: true } : {}),
+      sets: e.sets.filter(s => s.done).map(s => { const x = { w: s.w, r: s.r }; if (e.uni && s.rl != null && s.rr != null) { x.rl = s.rl; x.rr = s.rr; x.r = Math.min(s.rl, s.rr); } if (s.pr) x.pr = 1; return x; }) })).filter(e => e.sets.length);
   }
   return o;
 }
@@ -852,7 +873,7 @@ function editSession(id) {
   if (S.active) { toast('Erst die laufende Einheit beenden'); return; }
   const s = S.sessions[id]; if (!s) return;
   const a = clone(s); a.editing = true; a.origMonth = monthOf(s); a.durMin = sessMinutes(s) || 60;
-  if (a.kind === 'kraft') a.ex = a.ex.map(e => ({ ...e, rest: 90, sug: null, prev: [], sets: e.sets.map(x => ({ w: x.w, r: x.r, tr: x.r, done: true, pr: !!x.pr })) }));
+  if (a.kind === 'kraft') a.ex = a.ex.map(e => ({ ...e, rest: 90, sug: null, prev: [], sets: e.sets.map(x => ({ w: x.w, r: x.r, rl: x.rl != null ? x.rl : null, rr: x.rr != null ? x.rr : null, tr: x.r, done: true, pr: !!x.pr })) }));
   S.active = a; S.showWorkout = true; S.sheet = null; saveActive(true); commit();
 }
 function deleteSession(id) {
@@ -990,7 +1011,7 @@ function textExport() {
   for (const s of sortedSessions()) {
     const min = sessMinutes(s);
     lines.push(dateShort(s.date) + parseDkey(s.date).getFullYear() + ' · ' + s.name + (min ? ' · ' + min + ' min' : ''));
-    if (s.kind === 'kraft') for (const e of s.ex) lines.push('  ' + e.name + ': ' + e.sets.map(x => (e.bw && !x.w ? 'KG' : fmtKg(x.w)) + '×' + x.r).join(', '));
+    if (s.kind === 'kraft') for (const e of s.ex) lines.push('  ' + e.name + (e.uni ? ' (links/rechts)' : '') + ': ' + e.sets.map(x => fmtSet(e.bw, x)).join(', '));
     if (s.kind === 'boxen') lines.push('  ' + s.box.art + ': ' + s.box.rounds + ' × ' + fmtDur(s.box.round) + (s.box.rpe ? ' · RPE ' + s.box.rpe : ''));
     if (s.kind === 'lauf') { const r = cardioRate(s.run); lines.push('  ' + (s.run.act || 'Laufen') + ', ' + s.run.art + ': ' + fmt1(s.run.km) + ' km in ' + fmtDur(s.run.sec) + ' · ' + r.main + ' ' + r.unit); }
     if (s.note) lines.push('  Notiz: ' + s.note);
@@ -1279,11 +1300,14 @@ function ExCard({ a, e, ei }) {
   const [restOpen, setRestOpen] = useState(false);
   const auto = !!pref('restByReps');
   const sugIcon = !e.sug ? null : e.sug.mode === 'up' ? I.up : e.sug.mode === 'low' ? I.alert : I.eq;
-  const pw = s => (s ? (e.bw && !s.w ? 'KG' : fmtKg(s.w)) + '×' + s.r : '–');
+  const pw = s => fmtSet(e.bw, s);
+  const sideIn = (s, si, k, l) => html`<${NumInput} id=${k + '-' + a.id + '-' + ei + '-' + si} label=${'Satz ' + (si + 1) + ' ' + l} decimals=${false} value=${s[k]} placeholder=${s.tr}
+    onChange=${v => { s[k] = v == null ? null : Math.round(v); if (s.done) s.r = Math.min(s.rl != null ? s.rl : s.tr, s.rr != null ? s.rr : s.tr); touch(); }} />`;
   return html`<div class="card ex">
     <div class="ex-title"><div class="grow"><div class="h3">${e.name}</div>
       <div class="row wrap" style="gap:4px 8px;margin-top:4px"><span class="tiny faint data" style="letter-spacing:0">${e.sets.length} × ${e.lo}–${e.hi} · +${fmtKg(e.inc)} kg</span>
-        ${!quiet(a) && html`<button class="restchip" aria-expanded=${restOpen ? 'true' : 'false'} onClick=${() => setRestOpen(!restOpen)}>Pause ${fmtDur(restFor(e))}${auto ? ' · auto' : ''}</button>`}</div></div>
+        ${!quiet(a) && html`<button class="restchip" aria-expanded=${restOpen ? 'true' : 'false'} onClick=${() => setRestOpen(!restOpen)}>Pause ${fmtDur(restFor(e))}${auto ? ' · auto' : ''}</button>`}
+        <button class="restchip" aria-pressed=${e.uni ? 'true' : 'false'} title="Wiederholungen für links und rechts getrennt" onClick=${() => setExUni(e, !e.uni)}>Einarmig</button></div></div>
       ${e.bar && html`<button class="btn sm ghost" onClick=${() => { const w = (e.sets.find(s => !s.done) || e.sets[0]).w; S.sheet = { type: 'plates', w: w || S.settings.prefs.bar }; commit(); }}>Scheiben</button>`}
     </div>
     ${restOpen && !quiet(a) && html`<div class="card flat stack" style="gap:8px;padding:12px">
@@ -1291,16 +1315,18 @@ function ExCard({ a, e, ei }) {
         : html`<div class="row between" style="gap:10px"><span class="small">Pause zwischen den Sätzen</span><div style="width:150px"><${Stepper} label="Pause" value=${e.rest || 90} min=${15} max=${600} step=${15} fmt=${fmtDur} onChange=${v => setExRest(e, v)} /></div></div>
           <p class="tiny faint" style="margin:0">Gilt für diese Übung, auch in deinem Plan. Die Pause hängt nicht von den Wiederholungen ab, außer du schaltest das unter Plan → Erweitert ein.</p>`}
     </div>`}
-    ${e.sug && html`<div class=${'sug ' + e.sug.mode}>${sugIcon}<span>${e.sug.text}</span></div>`}
+    ${e.sug && html`<div class=${'sug ' + e.sug.mode}>${sugIcon}<span>${e.sug.text}${e.uni ? ' Gezählt wird der schwächere Arm.' : ''}</span></div>`}
     <div class="sets">
-      <div class="set head" aria-hidden="true"><span></span><span>Vorher</span><span>${e.bw ? '+kg' : 'kg'}</span><span>Wdh</span><span></span></div>
-      ${e.sets.map((s, si) => html`<div class=${'set' + (s.done ? ' done' : '')} key=${si}>
+      <div class=${'set head' + (e.uni ? ' uni' : '')} aria-hidden="true"><span></span><span>Vorher</span><span>${e.bw ? '+kg' : 'kg'}</span>${e.uni ? html`<span>Links</span><span>Rechts</span>` : html`<span>Wdh</span>`}<span></span></div>
+      ${e.sets.map((s, si) => html`<div class=${'set' + (e.uni ? ' uni' : '') + (s.done ? ' done' : '')} key=${si}>
         <span class="n">${s.pr ? html`<span class="pr">PR</span>` : si + 1}</span>
         <span class="prev">${pw(e.prev[si])}</span>
         <${NumInput} id=${'w-' + a.id + '-' + ei + '-' + si} label=${'Satz ' + (si + 1) + ' Gewicht'} value=${s.w} placeholder=${e.bw ? '0' : 'kg'}
-          onChange=${v => { s.w = v; if (s.done && v == null) s.done = false; touch(); }} />
-        <${NumInput} id=${'r-' + a.id + '-' + ei + '-' + si} label=${'Satz ' + (si + 1) + ' Wiederholungen'} decimals=${false} value=${s.r} placeholder=${s.tr}
-          onChange=${v => { s.r = v == null ? null : Math.round(v); touch(); }} />
+          onChange=${v => { const was = s.w; s.w = v; if (s.done && v == null) s.done = false;
+            if (v != null && pref('carryW') !== false) e.sets.forEach((x, j) => { if (j > si && !x.done && (x.w == null || x.w === was)) x.w = v; }); touch(); }} />
+        ${e.uni ? [sideIn(s, si, 'rl', 'Wiederholungen links'), sideIn(s, si, 'rr', 'Wiederholungen rechts')]
+          : html`<${NumInput} id=${'r-' + a.id + '-' + ei + '-' + si} label=${'Satz ' + (si + 1) + ' Wiederholungen'} decimals=${false} value=${s.r} placeholder=${s.tr}
+          onChange=${v => { s.r = v == null ? null : Math.round(v); touch(); }} />`}
         <button class="chk" aria-label=${'Satz ' + (si + 1) + (s.done ? ' zurücksetzen' : ' abhaken')} aria-pressed=${s.done ? 'true' : 'false'} onClick=${() => toggleSet(ei, si)}>${I.check}</button>
       </div>`)}
     </div>
@@ -1415,7 +1441,7 @@ function RunLog({ a }) {
 /* ---------- sheets ---------- */
 function FinishSheet({ onClose }) {
   const a = S.active, err = validateActive(a);
-  const vol = a.kind === 'kraft' ? a.ex.reduce((v, e) => v + e.sets.filter(s => s.done).reduce((x, s) => x + loadOf(e, s.w) * (s.r || 0), 0), 0) : 0;
+  const vol = a.kind === 'kraft' ? a.ex.reduce((v, e) => v + e.sets.filter(s => s.done).reduce((x, s) => x + loadOf(e, s.w) * (e.uni ? (s.rl != null ? s.rl : s.r || 0) + (s.rr != null ? s.rr : s.r || 0) : s.r || 0), 0), 0) : 0;
   const sets = a.kind === 'kraft' ? a.ex.reduce((n, e) => n + e.sets.filter(s => s.done).length, 0) : 0;
   const prs = a.kind === 'kraft' ? a.ex.reduce((n, e) => n + e.sets.filter(s => s.done && s.pr).length, 0) : 0;
   const mins = shownDur(a);
@@ -1524,7 +1550,7 @@ function HistoryView() {
 function SessionDetail({ s }) {
   return html`<div class=${'stack t-' + s.color} style="gap:10px;padding:2px 0 16px">
     ${s.kind === 'kraft' && html`<table><tbody>${s.ex.map(e => html`<tr><td style="white-space:normal;padding-left:0">${e.name}${e.sets.some(x => x.pr) ? html` <span class="pr">PR</span>` : ''}</td>
-      <td class="n" style="white-space:normal;padding-right:0">${e.sets.map(x => (e.bw && !x.w ? 'KG' : fmtKg(x.w)) + '×' + x.r).join('  ')}</td></tr>`)}</tbody></table>`}
+      <td class="n" style="white-space:normal;padding-right:0">${e.sets.map(x => fmtSet(e.bw, x)).join('  ')}</td></tr>`)}</tbody></table>`}
     ${s.kind === 'boxen' && html`<div class="meta"><span>${s.box.art}</span><span><b>${s.box.rounds} × ${fmtDur(s.box.round)}</b></span><span>Pause <b>${fmtDur(s.box.rest)}</b></span></div>`}
     ${s.kind === 'lauf' && html`<div class="meta"><span>${s.run.act || 'Laufen'} · ${s.run.art}</span><span><b>${fmt1(s.run.km)} km</b></span><span><b>${fmtDur(s.run.sec)}</b></span><span><b>${cardioRate(s.run).main}</b> ${cardioRate(s.run).unit}</span>${s.run.hr ? html`<span><b>${s.run.hr}</b> bpm</span>` : null}</div>`}
     ${s.note && html`<p class="small muted" style="margin:0;white-space:pre-wrap">${s.note}</p>`}
@@ -1722,7 +1748,7 @@ function LibrarySheet({ title, exclude = [], onPick, onClose }) {
   exerciseIndex(S.sessions).forEach(x => { if (!libEx(x.id) && !own.some(y => y.id === x.id)) own.push({ ...exd(x.id, x.name, 3, 8, 12, 2.5, 90, { bw: x.bw }), eq: '', own: true }); });
   const match = x => !exclude.includes(x.id) && (!g || x.group === g) && (!eq || x.eq === eq) && (!q || norm(x.name).includes(norm(q)));
   const list = [...own.filter(match), ...LIB.filter(match)];
-  const pick = x => onPick(x.own ? { ...exd(x.id, x.name, x.sets || 3, x.lo || 8, x.hi || 12, x.inc || 2.5, x.rest || 90, { bar: x.bar, bw: x.bw, group: x.group, typ: exTyp(x) }) } : exFromLib(x.id));
+  const pick = x => onPick(x.own ? { ...exd(x.id, x.name, x.sets || 3, x.lo || 8, x.hi || 12, x.inc || 2.5, x.rest || 90, { bar: x.bar, bw: x.bw, group: x.group, typ: exTyp(x), uni: !!x.uni }) } : exFromLib(x.id));
   const typ = ct || (['Langhantel', 'Körpergewicht', 'Kettlebell'].includes(ce) ? 'grund' : 'iso');
   const addCustom = () => {
     const name = cn.trim(); if (!name) return;
@@ -1842,7 +1868,7 @@ function Stats() {
           <div><div class="eyebrow">Zeitraum</div><div class=${'data' + (delta > 0 ? ' up' : '')} style="font-size:16px;margin-top:3px">${delta == null ? '–' : (delta >= 0 ? '+' : '') + fmt1(delta * 100) + ' %'}</div></div>
         </div>
         ${exInfo && exInfo.bw ? html`<p class="tiny faint" style="margin:0">Mit ${fmtKg(pref('bw'))} kg Körpergewicht gerechnet (änderbar unter Plan).</p>` : null}
-        <${DataTable} head=${['Datum', '1RM (kg)', 'Bester Satz']} rows=${series.slice().reverse().map(p => [dateShort(p.date), fmt1(p.y), p.set ? (p.bw && !p.set.w ? 'KG' : fmtKg(p.set.w)) + ' × ' + p.set.r : '–'])} />`
+        <${DataTable} head=${['Datum', '1RM (kg)', 'Bester Satz']} rows=${series.slice().reverse().map(p => [dateShort(p.date), fmt1(p.y), p.set ? fmtSet(p.bw, p.set) : '–'])} />`
         : html`<p class="small muted" style="margin:0">Keine Einträge für diese Übung in diesem Zeitraum.</p>`}
     </section>` : null}
 
@@ -1857,7 +1883,7 @@ function Stats() {
 
     ${exIdx.length ? html`<section class="card stack" style="gap:8px"><h2 class="h3">Rekorde</h2>
       <div class="tablewrap" style="margin:0"><table><thead><tr><th>Übung</th><th class="n">1RM</th><th class="n">Satz</th><th class="n">Datum</th></tr></thead>
-      <tbody>${exIdx.map(x => html`<tr><td style="padding-left:0;white-space:normal">${x.name}</td><td class="n">${fmt1(x.best)}</td><td class="n">${x.bestSet ? (x.bw && !x.bestSet.w ? 'KG' : fmtKg(x.bestSet.w)) + '×' + x.bestSet.r : '–'}</td><td class="n" style="padding-right:0">${x.bestDate ? dateShort(x.bestDate).slice(4) : ''}</td></tr>`)}</tbody></table></div></section>` : null}
+      <tbody>${exIdx.map(x => html`<tr><td style="padding-left:0;white-space:normal">${x.name}</td><td class="n">${fmt1(x.best)}</td><td class="n">${x.bestSet ? fmtSet(x.bw, x.bestSet) : '–'}</td><td class="n" style="padding-right:0">${x.bestDate ? dateShort(x.bestDate).slice(4) : ''}</td></tr>`)}</tbody></table></div></section>` : null}
   </div>`;
 }
 
@@ -1922,7 +1948,7 @@ function Plan() {
       </div>
       <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Einheiten im Verlauf.</p>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.1</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.2</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
@@ -1939,7 +1965,7 @@ function TplSheet({ id, openId, onClose }) {
       ${!t.exercises.length && html`<p class="small muted" style="margin:6px 0">Noch keine Übungen. Füge welche aus der Bibliothek hinzu.</p>`}
       ${t.exercises.map((e, i) => html`<div class="edit-ex" key=${e.id}>
         <div class="row"><button class="grow" style="text-align:left" aria-expanded=${openEx === e.id ? 'true' : 'false'} onClick=${() => setOpenEx(openEx === e.id ? null : e.id)}>
-          <b>${e.name || 'Ohne Namen'}</b><div class="tiny faint data" style="letter-spacing:0">${e.sets} × ${e.lo}–${e.hi} · +${fmtKg(e.inc)} kg · Pause ${fmtDur(restFor(e))} · ${exTyp(e) === 'grund' ? 'Grund' : 'Iso'}${e.bar ? ' · Stange' : ''}${e.bw ? ' · KG' : ''}</div></button>
+          <b>${e.name || 'Ohne Namen'}</b><div class="tiny faint data" style="letter-spacing:0">${e.sets} × ${e.lo}–${e.hi} · +${fmtKg(e.inc)} kg · Pause ${fmtDur(restFor(e))} · ${exTyp(e) === 'grund' ? 'Grund' : 'Iso'}${e.uni ? ' · einarmig' : ''}${e.bar ? ' · Stange' : ''}${e.bw ? ' · KG' : ''}</div></button>
           <button class="iconbtn" aria-label="nach oben" disabled=${i === 0} onClick=${() => move(i, -1)}>${I.arrowU}</button>
           <button class="iconbtn" aria-label="nach unten" disabled=${i === t.exercises.length - 1} onClick=${() => move(i, 1)}>${I.down}</button></div>
         ${openEx === e.id && html`<div class="stack" style="gap:10px">
@@ -1956,6 +1982,7 @@ function TplSheet({ id, openId, onClose }) {
           </div>
           <${Toggle} on=${e.bar} label="Langhantel" hint="Zeigt den Scheibenrechner" onChange=${v => { e.bar = v; ch(); }} />
           <${Toggle} on=${e.bw} label="Körpergewicht" hint="Eingetragenes Gewicht zählt als Zusatzgewicht" onChange=${v => { e.bw = v; ch(); }} />
+          <${Toggle} on=${!!e.uni} label="Einarmig / einseitig" hint="Pro Satz ein Gewicht, Wiederholungen für links und rechts getrennt. Für die Steigerung zählt der schwächere Arm." onChange=${v => { e.uni = v; ch(); }} />
           <${Confirm} label="Übung entfernen" yes="Entfernen" onYes=${() => { t.exercises.splice(i, 1); ch(); }} />
         </div>`}
       </div>`)}
