@@ -1,0 +1,14 @@
+{
+  "appId": "io.github.nicorickert116.formkurve",
+  "appName": "Formkurve",
+  "webDir": "www",
+  "server": {
+    "url": "https://nicorickert116-cmd.github.io/Formkurve/",
+    "errorPath": "offline.html"
+  },
+  "ios": {
+    "limitsNavigationsToAppBoundDomains": true,
+    "contentInset": "never",
+    "backgroundColor": "#0D0F12"
+  }
+}

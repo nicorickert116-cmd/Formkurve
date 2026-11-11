@@ -818,6 +818,7 @@ async function boot() {
   S.sessions = d.sessions || {}; S.meta = d.meta || {}; S.active = d.active || null;
   if (S.active) { S.showWorkout = true; if (S.active.kind === 'boxen') { const t = tpl(S.active.tpl); S.bt.cfg = { ...BOX_DEF, ...((t && t.box) || {}) }; } }
   const tab = lsGet('formkurve.tab'); if (['heute', 'verlauf', 'statistik', 'plan'].includes(tab)) S.tab = tab;
+  if (Cap()) S.standalone = true; // in der iPhone-App gibt es nichts zu installieren
   S.loaded = true; applyTheme(); commit();
   if (S.active) { toast('Dein Training läuft weiter'); resumeTrackingAfterReload(); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -1162,6 +1163,11 @@ async function exportJSON() {
   const data = JSON.stringify({ app: 'formkurve', v: 2, exported: new Date().toISOString(), settings: S.settings, sessions: sortedSessions() });
   const name = 'formkurve-backup-' + dkey(new Date()) + '.json';
   const done = msg => { S.meta.lastBackup = Date.now(); saveMeta(); toast(msg); };
+  const FS = nativePlugin('Filesystem'), SH = nativePlugin('Share');
+  if (FS && SH) { // iPhone-App: Datei schreiben und über das Teilen-Menü sichern
+    try { const w = await FS.writeFile({ path: name, data, directory: 'CACHE', encoding: 'utf8' }); await SH.share({ title: 'Formkurve-Backup', url: w.uri }); done('Backup bereit. Speicher es z. B. in „Dateien“.'); return; }
+    catch (e) { if (e && /cancel/i.test(String(e.message || e))) return; }
+  }
   try {
     const file = new File([data], name, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Formkurve-Backup' }); done('Backup bereit. Speicher es z. B. in „Dateien“.'); return; }
@@ -1771,10 +1777,10 @@ function trackWatch() {
   const BG = nativePlugin('BackgroundGeolocation');
   if (BG) {
     try {
-      BG.addWatcher({ backgroundMessage: 'Formkurve zeichnet deine Einheit auf.', backgroundTitle: 'Tracking läuft', requestPermissions: true, stale: false, distanceFilter: 3 }, (loc, err) => {
+      Promise.resolve(BG.addWatcher({ backgroundMessage: 'Formkurve zeichnet deine Einheit auf.', backgroundTitle: 'Tracking läuft', requestPermissions: true, stale: false, distanceFilter: 3 }, (loc, err) => {
         if (err) { if (err.code === 'NOT_AUTHORIZED') toast('Standort nicht erlaubt. Erlaube ihn in den iPhone-Einstellungen für Formkurve („Immer“).'); return; }
         if (loc) trackPoint(loc.latitude, loc.longitude, loc.accuracy, loc.time || Date.now());
-      }).then(id => { TR.nativeId = id; }).catch(() => toast('GPS konnte nicht starten.'));
+      })).then(id => { TR.nativeId = id; }).catch(() => toast('GPS konnte nicht starten.'));
     } catch (e) { toast('GPS konnte nicht starten.'); }
     return;
   }
@@ -2384,7 +2390,7 @@ function Plan() {
       </div>
       <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Einheiten im Verlauf.</p>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4.1</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {

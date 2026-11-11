@@ -1,0 +1,52 @@
+name: iPhone-App bauen
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/ios-app.yml']
+permissions:
+  contents: write
+concurrency:
+  group: ios-app
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Abhängigkeiten installieren
+        working-directory: app
+        run: npm install --no-audit --no-fund
+      - name: iOS-Projekt erzeugen und anpassen
+        working-directory: app
+        run: |
+          npx cap add ios
+          bash ios-patch.sh
+          npx cap sync ios
+      - name: App bauen (unsigniert, SideStore signiert beim Installieren)
+        working-directory: app/ios/App
+        run: |
+          if [ -d App.xcworkspace ]; then SRC=(-workspace App.xcworkspace); else SRC=(-project App.xcodeproj); fi
+          xcodebuild "${SRC[@]}" -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -40
+          rm -rf Payload && mkdir Payload && cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry Formkurve.ipa Payload
+          ls -la Formkurve.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Formkurve-iPhone-App
+          path: app/ios/App/Formkurve.ipa
+      - name: Als Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="app-${{ github.run_number }}"
+          gh release create "$TAG" app/ios/App/Formkurve.ipa --title "Formkurve iPhone-App ${TAG#app-}" \
+            --notes "Installieren: Formkurve.ipa auf dem iPhone laden und in SideStore mit + hinzufügen." --latest
