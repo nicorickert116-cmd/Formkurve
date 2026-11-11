@@ -1,6 +1,10 @@
 name: iPhone-App bauen
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Mac-Runner (macos-15 oder macos-15-intel, falls die anderen ausgelastet sind)'
+        default: 'macos-15'
   push:
     branches: [main]
     paths: ['app/**', '.github/workflows/ios-app.yml']
@@ -11,13 +15,18 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: ${{ inputs.runner || 'macos-15' }}
     timeout-minutes: 40
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+      - name: Neueste Xcode-Version wählen
+        run: |
+          X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | grep -E 'Xcode_[0-9.]+\.app$' | sort -V | tail -1)
+          [ -n "$X" ] && sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
       - uses: actions/setup-node@v4
         with:
           node-version: 22
