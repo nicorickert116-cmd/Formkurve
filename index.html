@@ -292,6 +292,52 @@ th.n{text-align:right}
 .set.head.uni span:nth-child(n+3){text-align:center}
 .mx{display:inline-block;font:700 9.5px/1 var(--font-body);letter-spacing:.04em;padding:3px 4px;border-radius:5px;background:var(--c);color:var(--on-c);vertical-align:middle}
 button.n{width:100%;min-height:44px;padding:0}
+
+/* Umsortieren */
+.rl{display:flex;flex-direction:column}
+.rl-item{transition:transform .18s ease;position:relative}
+.rl.dragging .rl-item{user-select:none;-webkit-user-select:none}
+.rl-item.drag{transition:none;z-index:6;background:var(--surface);border-radius:12px;box-shadow:0 14px 30px -12px rgba(0,0,0,.45)}
+.grip{width:36px;min-height:44px;flex:none;display:grid;place-items:center;color:var(--ink-3);touch-action:none;cursor:grab;border-radius:10px}
+.grip:active{cursor:grabbing;color:var(--ink)}
+.grip svg{width:20px;height:20px}
+.order-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line-2)}
+.rl-item:first-child .order-row{border-top:0}
+.btn.sm svg{width:16px;height:16px}
+/* Training: aktuelle Übung, erledigte eingeklappt */
+.ex{scroll-margin-top:140px;transition:border-color .25s ease,box-shadow .25s ease}
+.ex.now{border:1.5px solid var(--c);box-shadow:0 0 0 3px color-mix(in oklab,var(--c) 14%,transparent),var(--lift)}
+.now-tag{color:var(--c);margin-bottom:-4px}
+.ex-done{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;scroll-margin-top:140px;animation:fadeUp .28s ease-out}
+.okdot{width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--c-soft,var(--surface-2));color:var(--c,var(--good))}
+.okdot svg{width:16px;height:16px}
+/* schlichte Animationen */
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.55)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes prGlow{0%{transform:scale(.6);box-shadow:0 0 0 0 color-mix(in oklab,var(--box) 70%,transparent)}50%{transform:scale(1.15)}100%{transform:scale(1);box-shadow:0 0 0 10px transparent}}
+.view{animation:fadeUp .22s ease-out}
+.set{transition:background-color .25s ease}
+.set.done .chk svg{animation:pop .3s ease-out}
+.set .pr{animation:prGlow .6s ease-out}
+.segbar i{transition:background-color .35s ease}
+.btn:active,.chk:active,.chip:active{transform:scale(.97)}
+.btn,.chk,.chip{transition:transform .08s ease,background-color .2s ease,border-color .2s ease}
+.dock-in{animation:fadeUp .2s ease-out}
+
+/* GPS-Tracking */
+.track-big{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.track-big b{display:block;font-size:clamp(34px,11vw,48px);line-height:1;letter-spacing:-.05em}
+.track-big span{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.gps{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-3)}
+.gps i{width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+.gps.ok i{background:var(--good)}.gps.mid i{background:var(--warn)}.gps.bad i{background:var(--bad)}
+.route{display:block;width:100%;max-width:100%;height:auto;background:var(--surface-2);border-radius:12px}
+.route-empty{height:90px;display:grid;place-items:center;background:var(--surface-2);border-radius:12px}
+.warnline{color:var(--warn);font-weight:600}
+.track-live{border:1.5px solid var(--c)}
+.inl{display:inline-flex;vertical-align:-3px}.inl svg{width:16px;height:16px}
+.resume button svg{width:22px;height:22px;flex:none}
+.wo-head .clock{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -486,18 +532,22 @@ const COMPOUND = new Set(["bankdruecken", "schraegbank_lh", "negativbank", "bank
 const UNILATERAL = new Set(["kh_rudern", "konzentration", "bulgarian", "stepups"]);
 /* Pausen nach Studienlage: Grundübungen brauchen länger als Isolationsübungen, schwere Sätze länger als leichte.
    Zeile: Anzeige, bis Wdh. (untere Grenze des Bereichs), Grundübung, Isolation. Rumpf: immer 1:00. */
-const REST_TABLE = [['bis 5', 5, 180, 120], ['6–8', 8, 150, 90], ['9–12', 12, 120, 90], ['ab 13', 999, 90, 60]];
-const SWITCH_MIN = 120;
-function autoRest(lo, typ, group) { if (group === 'Rumpf') return 60; const row = REST_TABLE.find(r => (lo || 8) <= r[1]) || REST_TABLE[REST_TABLE.length - 1]; return typ === 'iso' ? row[3] : row[2]; }
+const REST_TABLE = [['bis 5', 5, 180, 150], ['6–8', 8, 150, 120], ['9–12', 12, 120, 120], ['ab 13', 999, 90, 90]];
+const REST_TABLE_V2 = [['bis 5', 5, 180, 120], ['6–8', 8, 150, 90], ['9–12', 12, 120, 90], ['ab 13', 999, 90, 60]]; // Version 1.3, für die Umstellung
+const SWITCH_MIN = 120, MUSCLE_BONUS = 30;
+const REST_STYLES = { kurz: ['Kurz', 0.75], normal: ['Normal', 1], lang: ['Lang', 1.25] };
+function autoRest(lo, typ, group, table) { if (group === 'Rumpf') return 60; const T = table || REST_TABLE; const row = T.find(r => (lo || 8) <= r[1]) || T[T.length - 1]; return typ === 'iso' ? row[3] : row[2]; }
 const OLD_REST = Object.fromEntries(LIB_RAW.map(r => [r[0], r[8]])); // Standardpausen bis Version 1.2, für die Umstellung
 const LIB = LIB_RAW.map(([id, name, group, eq, sets, lo, hi, inc, rest, f = '']) => { const typ = COMPOUND.has(id) ? 'grund' : 'iso'; return { id, name, group, eq, sets, lo, hi, inc, rest: autoRest(lo, typ, group), bar: f.includes('b'), bw: f.includes('k'), typ, uni: UNILATERAL.has(id) }; });
 const libEx = id => LIB.find(x => x.id === id);
-function exd(id, name, sets, lo, hi, inc, rest, o = {}) { return { id, name, sets, lo, hi, inc, rest, bar: !!o.bar, bw: !!o.bw, start: null, group: o.group || '', typ: o.typ || ((o.bar || o.bw) ? 'grund' : 'iso'), uni: !!o.uni }; }
+function exd(id, name, sets, lo, hi, inc, rest, o = {}) { return { id, name, sets, lo, hi, inc, rest, bar: !!o.bar, bw: !!o.bw, start: null, group: o.group || '', typ: o.typ || ((o.bar || o.bw) ? 'grund' : 'iso'), uni: !!o.uni, restManual: false }; }
 function exFromLib(id) { const x = libEx(id); return x ? exd(x.id, x.name, x.sets, x.lo, x.hi, x.inc, x.rest, { bar: x.bar, bw: x.bw, group: x.group, typ: x.typ, uni: x.uni }) : null; }
 /* Satz-Anzeige: 20×10, bei einarmig 20×10/9 (links/rechts), KG = nur Körpergewicht */
 function fmtSet(bw, x, mark = true) { if (!x) return '–'; const w = bw && !x.w ? 'KG' : fmtKg(x.w); return w + '×' + (x.rl != null && x.rr != null ? x.rl + '/' + x.rr : x.r) + (mark && x.f ? ' (max)' : ''); }
 function exGroup(e) { if (!e) return ''; if (e.group) return e.group; const x = libEx(e.id); return x ? x.group : ''; }
 const stdRest = e => autoRest(e.lo, exTyp(e), exGroup(e));
+/* Pause, die ich von Hand eingestellt habe? Ältere Pläne ohne Angabe: abweichend von der Empfehlung = von Hand */
+const isManual = e => e.restManual === true || (e.restManual == null && e.rest != null && e.rest !== stdRest(e));
 function setReps(x) { return x.rl != null && x.rr != null ? x.rl + x.rr : x.r || 0; }
 /* Grund- oder Isolationsübung: eigene Angabe, sonst Bibliothek, sonst Langhantel/Körpergewicht = Grundübung */
 function exTyp(e) { if (e && (e.typ === 'grund' || e.typ === 'iso')) return e.typ; const x = e && libEx(e.id); if (x) return x.typ; return e && (e.bar || e.bw) ? 'grund' : 'iso'; }
@@ -551,27 +601,31 @@ function buildPlan(o) {
     const t = { id: uid('t_'), name: act, kind: 'lauf', color: pick('run'), focus: 'Ausdauer', run: { ...RUN_DEF, act } };
     templates.push(t); const f = [6, 5, 0, 2, 4].filter(i => !week[i].length); week[f.length ? f[0] : 6].push(t.id);
   }
-  return { v: 2, onboarded: true, templates, week, restV: 2, prefs: { sound: true, vibrate: true, bw: o.bw || 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, carryW: true } };
+  return { v: 2, onboarded: true, templates, week, restV: 3, prefs: { sound: true, vibrate: true, bw: o.bw || 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, restMuscle: true, restStyle: 'normal', countdown: true, voice: false, carryW: true } };
 }
 function demoPlan() { return buildPlan({ preset: 'pp', legs: true, kampf: true, cardio: true, act: 'Laufen' }); }
 function normalizeSettings(s) {
   if (!s || !Array.isArray(s.templates)) return null;
   const o = clone(s);
   o.onboarded = true;
-  o.prefs = Object.assign({ sound: true, vibrate: true, bw: 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, carryW: true }, o.prefs || {});
+  o.prefs = Object.assign({ sound: true, vibrate: true, bw: 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, restMuscle: true, restStyle: 'normal', countdown: true, voice: false, carryW: true }, o.prefs || {});
   if (!Array.isArray(o.week) || o.week.length !== 7) o.week = [[], [], [], [], [], [], []];
   o.week = o.week.map(a => (Array.isArray(a) ? a.filter(id => o.templates.some(t => t.id === id)) : []));
   o.templates.forEach(t => {
     if (!COLORS.includes(t.color)) t.color = 'push';
     if (t.kind === 'kraft' && !Array.isArray(t.exercises)) t.exercises = [];
-    if (t.kind === 'kraft' && (o.restV || 0) < 2) t.exercises.forEach(e => {
-      // Umstellung 1.3: nie selbst geänderte Standardpausen auf das neue Schema setzen, eigene Werte behalten
-      if (libEx(e.id) && e.rest === OLD_REST[e.id]) e.rest = stdRest(e); else if (libEx(e.id) && e.rest !== stdRest(e)) e.restManual = true;
+    if (t.kind === 'kraft' && (o.restV || 0) < 3) t.exercises.forEach(e => {
+      // Umstellung auf das aktuelle Pausenschema: Pausen, die die App selbst gesetzt hatte, folgen der neuen Empfehlung;
+      // selbst eingestellte Pausen bleiben unverändert.
+      const appDefaults = [autoRest(e.lo, exTyp(e), exGroup(e), REST_TABLE_V2)];
+      if (libEx(e.id)) appDefaults.push(OLD_REST[e.id]);
+      if (e.restManual === true) return;
+      if (e.restManual === false || e.rest == null || appDefaults.includes(e.rest)) { e.rest = stdRest(e); e.restManual = false; } else e.restManual = true;
     });
     if (t.kind === 'boxen') t.box = Object.assign({}, BOX_DEF, t.box || {});
     if (t.kind === 'lauf') t.run = Object.assign({}, RUN_DEF, t.run || {});
   });
-  o.restV = 2;
+  o.restV = 3;
   return o;
 }
 function cardioRate(run) {
@@ -673,7 +727,11 @@ const DEB = {};
 function debounce(name, fn, ms) { if (DEB[name]) clearTimeout(DEB[name].t); DEB[name] = { fn, t: setTimeout(() => { DEB[name] = null; fn(); }, ms) }; }
 function flushSaves() { for (const k in DEB) { const d = DEB[k]; if (d) { clearTimeout(d.t); DEB[k] = null; d.fn(); } } }
 function saveSettings() { debounce('settings', () => Store.put('settings', S.settings), 400); syncActive(); commit(); }
-const restFor = e => (pref('restByReps') ? stdRest(e) : e.rest || stdRest(e));
+/* Empfehlung = Tabelle × Pausen-Stil (+30 s, wenn derselbe Muskel in dieser Einheit schon dran war) */
+function styledRest(v) { const f = (REST_STYLES[pref('restStyle')] || REST_STYLES.normal)[1]; return Math.max(45, Math.round(v * f / 15) * 15); }
+function muscleBefore(a, e) { const g = exGroup(e); if (!a || !a.ex || !g || g === 'Rumpf' || g === 'Ganzkörper') return false; const i = a.ex.indexOf(e); return i > 0 && a.ex.slice(0, i).some(x => exGroup(x) === g); }
+function recRest(e, a) { return styledRest(stdRest(e)) + (a && pref('restMuscle') !== false && muscleBefore(a, e) ? MUSCLE_BONUS : 0); }
+function restFor(e, a) { return !pref('restByReps') && isManual(e) ? e.rest : recRest(e, a); }
 function saveActive(now) { const fn = () => Store.put('active', S.active || null); if (now) { if (DEB.active) { clearTimeout(DEB.active.t); DEB.active = null; } fn(); } else debounce('active', fn, 300); }
 function saveMeta() { Store.put('meta', S.meta); }
 function persistSession(s) { Store.putSessions([s]); }
@@ -683,7 +741,33 @@ window.addEventListener('pagehide', flushSaves);
 
 /* ---------- feedback: sound, vibration, wake lock, toast ---------- */
 let AC = null;
-function unlockAudio() { try { const C = window.AudioContext || window.webkitAudioContext; if (C && !AC) AC = new C(); if (AC && AC.state === 'suspended') AC.resume(); } catch (e) {} }
+let _voiceReady = false;
+function unlockAudio() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'transient') navigator.audioSession.type = 'transient'; } catch (e) {} // kurze Töne über laufende Musik legen
+  try { const C = window.AudioContext || window.webkitAudioContext; if (C && !AC) AC = new C(); if (AC && AC.state === 'suspended') AC.resume(); } catch (e) {}
+  try { if (!_voiceReady && pref('voice') && window.speechSynthesis) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); _voiceReady = true; } } catch (e) {}
+}
+/* Sprachansage (optional): Deutsch, kurz */
+function say(text) {
+  if (!pref('voice') || pref('sound') === false || !window.speechSynthesis || !text) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.rate = 1.05;
+    const v = (speechSynthesis.getVoices() || []).find(x => /^de(-|_)/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u); } catch (e) {}
+}
+/* iPhone-App (Capacitor-Hülle): Benachrichtigungen auf dem Sperrbildschirm. Im Browser passiert hier nichts. */
+const Cap = () => (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform() ? window.Capacitor : null);
+const nativePlugin = n => { const c = Cap(); return c && c.Plugins ? c.Plugins[n] : null; };
+let _notifPerm = null;
+async function nativeNotify(id, at, title, body) {
+  const LN = nativePlugin('LocalNotifications'); if (!LN) return;
+  try {
+    await LN.cancel({ notifications: [{ id }] });
+    if (!at || at <= Date.now() + 1500) return;
+    if (_notifPerm == null) { const p = await LN.requestPermissions(); _notifPerm = !!p && p.display === 'granted'; }
+    if (!_notifPerm) return;
+    await LN.schedule({ notifications: [{ id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } }] });
+  } catch (e) {}
+}
+function nativeRestNotify() { const r = S.rest; nativeNotify(101, r && !r.fired ? r.end : null, r && r.kind === 'switch' ? 'Wechselpause vorbei' : 'Pause vorbei', r ? (r.kind === 'switch' ? r.say : r.say || r.label) : ''); }
 function audio() { if (pref('sound') === false) return null; unlockAudio(); return AC; }
 function tone(c, f, t, dur, vol, type = 'sine') {
   const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
@@ -730,12 +814,12 @@ async function boot() {
   let d;
   try { d = await Store.loadAll(); } catch (e) { d = { settings: null, active: null, meta: {}, sessions: {} }; }
   S.settings = d.settings && d.settings.onboarded ? normalizeSettings(d.settings) : null;
-  if (S.settings && (d.settings.restV || 0) < 2) Store.put('settings', S.settings); // Umstellung einmalig speichern
+  if (S.settings && (d.settings.restV || 0) < 3) Store.put('settings', S.settings); // Umstellung einmalig speichern
   S.sessions = d.sessions || {}; S.meta = d.meta || {}; S.active = d.active || null;
   if (S.active) { S.showWorkout = true; if (S.active.kind === 'boxen') { const t = tpl(S.active.tpl); S.bt.cfg = { ...BOX_DEF, ...((t && t.box) || {}) }; } }
   const tab = lsGet('formkurve.tab'); if (['heute', 'verlauf', 'statistik', 'plan'].includes(tab)) S.tab = tab;
   S.loaded = true; applyTheme(); commit();
-  if (S.active) toast('Dein Training läuft weiter');
+  if (S.active) { toast('Dein Training läuft weiter'); resumeTrackingAfterReload(); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     try {
       const had = !!navigator.serviceWorker.controller;
@@ -753,7 +837,7 @@ function buildExercise(c, excludeId) {
   const last = lastEntry(c.id, excludeId);
   const sug = suggest(c, last ? last.sets : null);
   return {
-    id: c.id, name: c.name, bw: !!c.bw, bar: !!c.bar, lo: c.lo, hi: c.hi, inc: c.inc, rest: c.rest, startW: c.start, typ: exTyp(c),
+    id: c.id, name: c.name, bw: !!c.bw, bar: !!c.bar, lo: c.lo, hi: c.hi, inc: c.inc, rest: c.rest, restManual: isManual(c), group: exGroup(c), startW: c.start, typ: exTyp(c),
     sug: { mode: sug.mode, text: sug.text },
     uni: !!c.uni, amrap: !!c.amrap,
     prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, rl: s.rl, rr: s.rr })) : [],
@@ -781,7 +865,7 @@ const quiet = a => !!(a && (a.editing || a.log));
 function atTime(dateKey, hhmm) { const d = parseDkey(dateKey), [h, m] = String(hhmm || '18:00').split(':').map(Number); d.setHours(h || 0, m || 0, 0, 0); return d.getTime(); }
 function timeOf(ts) { const d = new Date(ts); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
 function defaultDur(a) {
-  if (a.kind === 'kraft') return Math.max(15, Math.round((a.ex || []).reduce((n, e) => n + e.sets.length * (restFor(e) + 45), 0) / 60 / 5) * 5);
+  if (a.kind === 'kraft') return Math.max(15, Math.round((a.ex || []).reduce((n, e) => n + e.sets.length * (restFor(e, a) + 45), 0) / 60 / 5) * 5);
   if (a.kind === 'boxen') { const t = tpl(a.tpl), b = (t && t.box) || BOX_DEF, r = (a.box && a.box.rounds) || b.rounds; return Math.round((r * b.round + Math.max(0, r - 1) * b.rest) / 60) + 15; }
   if (a.kind === 'lauf') return a.run && a.run.sec ? Math.ceil(a.run.sec / 60) + 5 : 45;
   return 60;
@@ -794,9 +878,12 @@ function fillTargets(ei) {
   for (let si = 0; si < e.sets.length; si++) { const s = e.sets[si]; if (s.done) continue; if (s.w == null && !e.bw) { toast('Trag beim ersten Satz das Gewicht ein'); break; } toggleSet(ei, si); }
 }
 function setExRest(e, v) {
-  e.rest = v; const t = tpl(S.active && S.active.tpl), c = t && (t.exercises || []).find(x => x.id === e.id);
-  if (c) { c.rest = v; c.restManual = v !== stdRest(c); saveSettings(); } touch();
+  const manual = v !== styledRest(stdRest(e));
+  e.rest = manual ? v : stdRest(e); e.restManual = manual;
+  const t = tpl(S.active && S.active.tpl), c = t && (t.exercises || []).find(x => x.id === e.id);
+  if (c) { c.rest = e.rest; c.restManual = manual; saveSettings(); } touch();
 }
+function resetExRest(e) { e.rest = stdRest(e); e.restManual = false; const t = tpl(S.active && S.active.tpl), c = t && (t.exercises || []).find(x => x.id === e.id); if (c) { c.rest = c.lo === e.lo ? e.rest : stdRest(c); c.restManual = false; saveSettings(); } touch(); }
 function syncActive() {
   const a = S.active; if (!a || a.kind !== 'kraft' || a.editing) return;
   const t = tpl(a.tpl); if (!t || !t.exercises) return; let ch = false;
@@ -806,7 +893,7 @@ function syncActive() {
     if (!prog && e.rest === c.rest && e.name === c.name && e.bar === !!c.bar && e.typ === exTyp(c) && !!e.uni === !!c.uni && !!e.amrap === !!c.amrap) return;
     if (!!e.uni !== !!c.uni) setExUniLocal(e, !!c.uni);
     if (!!e.amrap !== !!c.amrap) setExAmrapLocal(e, !!c.amrap);
-    Object.assign(e, { name: c.name, lo: c.lo, hi: c.hi, inc: c.inc, rest: c.rest, bar: !!c.bar, bw: !!c.bw, startW: c.start, typ: exTyp(c) }); ch = true;
+    Object.assign(e, { name: c.name, lo: c.lo, hi: c.hi, inc: c.inc, rest: c.rest, restManual: isManual(c), group: exGroup(c), bar: !!c.bar, bw: !!c.bw, startW: c.start, typ: exTyp(c) }); ch = true;
     if (prog) {
       const last = lastEntry(e.id, a.id), sg = suggest({ ...c, sets: e.sets.length }, last ? last.sets : null);
       e.sug = { mode: sg.mode, text: sg.text };
@@ -851,6 +938,8 @@ function toggleSet(ei, si) {
   if (!(s.r > 0)) { toast('Trag die Wiederholungen ein'); return; }
   s.done = true; s.at = Date.now();
   if (pref('carryW') !== false) e.sets.forEach((x, i) => { if (i > si && !x.done && x.w == null) x.w = s.w; });
+  // Leistungs-Check: fallen die Wiederholungen beim gleichen Gewicht um 3 oder mehr, Hinweis auf längere Pause
+  if (!quiet(a) && !s.f && !e.dropTip) { const first = e.sets.find(x => x !== s && x.done && !x.f && loadOf(e, x.w) === loadOf(e, s.w)); if (first && first.r - s.r >= 3) e.dropTip = { from: first.r, to: s.r }; }
   const cur = e1rm(loadOf(e, s.w), s.r);
   const prevBest = bestE1(e.id, a.id);
   const inSession = Math.max(0, ...e.sets.filter(x => x !== s && x.done).map(x => e1rm(loadOf(e, x.w), x.r)));
@@ -860,22 +949,24 @@ function toggleSet(ei, si) {
   }
   if (!quiet(a)) {
     const nxt = a.ex.slice(ei + 1).concat(a.ex.slice(0, ei)).find(x => x.sets.some(y => !y.done));
-    if (!e.sets.some(y => !y.done) && !nxt) { S.rest = null; toast('Alle Sätze geschafft. Tippe oben auf „Beenden“.'); }
+    if (!e.sets.some(y => !y.done) && !nxt) { S.rest = null; nativeRestNotify(); toast('Alle Sätze geschafft. Tippe oben auf „Beenden“.'); }
     else if (pref('restAuto') !== false) {
-      if (!e.sets.some(y => !y.done) && nxt && pref('restSwitch') !== false) startRest(Math.max(restFor(e), restFor(nxt), SWITCH_MIN), nxt.name, 'switch');
-      else startRest(restFor(e), e.name);
+      if (!e.sets.some(y => !y.done) && nxt && pref('restSwitch') !== false) startRest(Math.max(restFor(e, a), restFor(nxt, a), SWITCH_MIN), nxt.name, 'switch', 'Weiter mit ' + nxt.name);
+      else { const ni = e.sets.findIndex(y => !y.done); startRest(restFor(e, a), e.name, 'set', e.name + ', Satz ' + (ni + 1)); }
     }
   }
   touch();
 }
-function startRest(sec, label, kind) { unlockAudio(); S.rest = { end: Date.now() + sec * 1000, total: sec, label, kind: kind || 'set', fired: false }; }
-function shiftRest(d) { if (!S.rest) return; S.rest.end += d * 1000; S.rest.total = Math.max(5, S.rest.total + d); if (S.rest.end > Date.now()) S.rest.fired = false; commit(); }
+function startRest(sec, label, kind, say) { unlockAudio(); S.rest = { end: Date.now() + sec * 1000, total: sec, label, kind: kind || 'set', say: say || label, fired: false, cd: 0 }; nativeRestNotify(); }
+function shiftRest(d) { if (!S.rest) return; S.rest.end += d * 1000; S.rest.total = Math.max(5, S.rest.total + d); if (S.rest.end > Date.now()) { S.rest.fired = false; S.rest.cd = 0; } nativeRestNotify(); commit(); }
+function stopRest() { S.rest = null; nativeRestNotify(); commit(); }
 
 function cleanSession(a) {
   const o = clone(a);
   const dur = a.durMin != null ? a.durMin : a.log ? defaultDur(a) : null;
   o.end = dur ? o.start + dur * 60000 : o.end || Date.now();
   delete o.editing; delete o.origMonth; delete o.log; delete o.durMin;
+  if (o.run) { delete o.run.live; delete o.run.trackVer; }
   if (o.kind === 'kraft') {
     o.ex = (o.ex || []).map(e => ({ id: e.id, name: e.name, bw: !!e.bw, bar: !!e.bar, lo: e.lo, hi: e.hi, inc: e.inc, ...(e.uni ? { uni: true } : {}),
       sets: e.sets.filter(s => s.done).map(s => { const x = { w: s.w, r: s.r }; if (e.uni && s.rl != null && s.rr != null) { x.rl = s.rl; x.rr = s.rr; x.r = Math.min(s.rl, s.rr); } if (s.pr) x.pr = 1; if (s.f) x.f = 1; return x; }) })).filter(e => e.sets.length);
@@ -890,19 +981,20 @@ function validateActive(a) {
 }
 function finishSession() {
   const a = S.active; if (!a) return;
+  if (a.kind === 'lauf' && a.run && a.run.live && a.run.live.on) trackStop();
   const err = validateActive(a); if (err) { toast(err); return; }
   const out = cleanSession(a);
   const nextUp = out.kind === 'kraft' ? out.ex.map(e => ({ e, s: suggest({ sets: (a.ex.find(x => x.id === e.id)?.sets.length) || e.sets.length, lo: e.lo, hi: e.hi, inc: e.inc, bw: e.bw }, e.sets) })).filter(x => x.s.mode === 'up') : [];
   const prs = out.kind === 'kraft' ? out.ex.filter(e => e.sets.some(s => s.pr)).map(e => e.name) : [];
   S.sessions = { ...S.sessions, [out.id]: out };
   persistSession(out);
-  S.active = null; S.rest = null; S.showWorkout = false;
+  S.active = null; S.rest = null; nativeRestNotify(); S.showWorkout = false;
   if (S.bt.running) { S.bt.running = false; S.bt.phase = 'idle'; }
   saveActive(true); wakeOff();
   S.sheet = { type: 'summary', id: out.id, edited: !!a.editing, nextUp: nextUp.map(x => ({ name: x.e.name, from: x.s.prevW, to: x.s.w, bw: x.e.bw })), prs };
   commit();
 }
-function discardActive() { S.active = null; S.rest = null; S.showWorkout = false; S.sheet = null; if (S.bt.running) { S.bt.running = false; S.bt.phase = 'idle'; } saveActive(true); wakeOff(); commit(); }
+function discardActive() { trackUnwatch(); S.active = null; S.rest = null; nativeRestNotify(); S.showWorkout = false; S.sheet = null; if (S.bt.running) { S.bt.running = false; S.bt.phase = 'idle'; } saveActive(true); wakeOff(); commit(); }
 function editSession(id) {
   if (S.active) { toast('Erst die laufende Einheit beenden'); return; }
   const s = S.sessions[id]; if (!s) return;
@@ -920,15 +1012,20 @@ function btStart() {
   unlockAudio(); const cfg = { ...S.bt.cfg };
   S.bt = { phase: cfg.prep > 0 ? 'prep' : 'round', running: true, paused: false, round: cfg.prep > 0 ? 0 : 1, end: Date.now() + (cfg.prep > 0 ? cfg.prep : cfg.round) * 1000, left: 0, done: 0, cfg, warned: false, cd: 0 };
   if (cfg.prep > 0) beep([660], 0.12); else bell(1);
-  wakeOn(); commit();
+  wakeOn(); nativeBoxNotify(); commit();
 }
-function btPause() { const b = S.bt; if (!b.running) return; if (b.paused) { b.end = Date.now() + b.left; b.paused = false; } else { b.left = Math.max(0, b.end - Date.now()); b.paused = true; } commit(); }
+function nativeBoxNotify() {
+  const b = S.bt, live = b.running && !b.paused && b.phase !== 'done' && b.phase !== 'idle';
+  const title = b.phase === 'round' ? (b.round >= b.cfg.rounds ? 'Letzte Runde vorbei' : 'Runde ' + b.round + ' vorbei') : 'Runde ' + (b.round + 1) + ' startet';
+  nativeNotify(102, live ? b.end : null, title, b.phase === 'round' ? 'Pause' : 'Los geht’s');
+}
+function btPause() { const b = S.bt; if (!b.running) return; if (b.paused) { b.end = Date.now() + b.left; b.paused = false; } else { b.left = Math.max(0, b.end - Date.now()); b.paused = true; } nativeBoxNotify(); commit(); }
 function btSkip() { const b = S.bt; if (!b.running) return; if (b.paused) { b.paused = false; } b.end = Date.now(); btTick(Date.now()); commit(); }
 function btStop() {
   const b = S.bt; const done = b.phase === 'round' ? b.round - 1 : b.phase === 'prep' ? 0 : b.round;
   b.running = false; b.paused = false; b.phase = 'idle'; b.done = Math.max(b.done || 0, done);
   if (S.active && S.active.kind === 'boxen' && b.done > 0) { S.active.box.rounds = b.done; S.active.box.round = b.cfg.round; S.active.box.rest = b.cfg.rest; touch(); }
-  wakeOff(); commit();
+  nativeBoxNotify(); wakeOff(); commit();
 }
 function btTick(now) {
   const b = S.bt; if (!b.running || b.paused) return;
@@ -945,10 +1042,11 @@ function btTick(now) {
   const left = b.end - now;
   if (b.phase === 'round' && !b.warned && b.cfg.warn > 0 && left <= b.cfg.warn * 1000 && left > 0) { b.warned = true; if (!sound) sound = 'warn'; }
   if ((b.phase === 'rest' || b.phase === 'prep') && left <= 3000 && left > 0) { const sec = Math.ceil(left / 1000); if (sec !== b.cd) { b.cd = sec; if (!sound) sound = 'tick'; } }
-  if (sound === 'start') { bell(1); buzz(350); }
-  else if (sound === 'end') { bell(3); buzz([300, 120, 300, 120, 300]); }
+  if (sound === 'start') { bell(1); buzz(350); say('Runde ' + b.round); }
+  else if (sound === 'end') { bell(3); buzz([300, 120, 300, 120, 300]); say(b.phase === 'done' ? 'Geschafft' : 'Pause'); }
   else if (sound === 'warn') { clack(2); buzz(90); }
   else if (sound === 'tick') beep([620], 0.08);
+  if (sound === 'start' || sound === 'end') nativeBoxNotify();
   if (b.phase === 'done') {
     b.running = false;
     if (S.active && S.active.kind === 'boxen') { S.active.box.rounds = b.done; S.active.box.round = b.cfg.round; S.active.box.rest = b.cfg.rest; saveActive(); }
@@ -962,7 +1060,9 @@ let _lastSec = 0;
 setInterval(() => {
   const now = Date.now(); let ch = false;
   if (S.rest) {
-    if (now >= S.rest.end && !S.rest.fired) { S.rest.fired = true; beep([880, 1175, 1568], 0.14, 0.16); buzz([220, 90, 220]); }
+    const left = S.rest.end - now;
+    if (!S.rest.fired && pref('countdown') !== false && left > 0 && left <= 3000) { const sc = Math.ceil(left / 1000); if (sc !== S.rest.cd) { S.rest.cd = sc; beep([660], 0.07); } }
+    if (now >= S.rest.end && !S.rest.fired) { S.rest.fired = true; beep([880, 1175, 1568], 0.14, 0.16); buzz([220, 90, 220]); say(S.rest.kind === 'switch' ? S.rest.say : 'Pause vorbei. ' + S.rest.say); }
     if (now >= S.rest.end + 5000) S.rest = null;
     ch = true;
   }
@@ -1111,6 +1211,8 @@ const I = {
   down: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
   x: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
   plus: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+  grip: html`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>`,
+  pin: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0113 0c0 5.2-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>`,
   arrowU: html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>`,
   mark: html`<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--push)"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="var(--surface)" stroke-opacity=".35" stroke-width="2"/><circle cx="16" cy="16" r="3.4" fill="var(--bg)"/><path d="M5 22 L12 15 L17 19 L27 8" fill="none" stroke="var(--surface)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
@@ -1163,7 +1265,7 @@ function App() {
       <div class="mark">${I.mark}<span>Formkurve</span></div>
       ${!S.standalone && html`<button class="btn sm" onClick=${installApp}>App installieren</button>`}
     </header>
-    <main>
+    <main key=${S.tab} class="view">
       ${S.tab === 'heute' && html`<${Today} />`}
       ${S.tab === 'verlauf' && html`<${HistoryView} />`}
       ${S.tab === 'statistik' && html`<${Stats} />`}
@@ -1197,6 +1299,7 @@ function SheetHost() {
   if (sh.type === 'tpl') return html`<${TplSheet} id=${sh.id} openId=${sh.open} onClose=${close} />`;
   if (sh.type === 'install') return html`<${InstallSheet} onClose=${close} />`;
   if (sh.type === 'logPick') return html`<${LogPickSheet} sh=${sh} onClose=${close} />`;
+  if (sh.type === 'order') return html`<${OrderSheet} onClose=${close} />`;
   if (sh.type === 'text') return html`<${Sheet} onClose=${close} label=${sh.title}>
     <h2 class="h2">${sh.title}</h2><p class="small muted" style="margin:0">Tippe ins Feld, markiere alles und kopiere den Text.</p>
     <textarea id="text-export" class="inp" style="min-height:260px;font:12px/1.5 var(--font-data)" readonly value=${sh.text}
@@ -1296,6 +1399,58 @@ function PlanMeta({ t }) {
   return null;
 }
 
+/* ---------- Liste zum Umsortieren: Griff halten und ziehen (Finger oder Maus); am Griff gehen auch die Pfeiltasten ---------- */
+function ReorderList({ items, keyOf, onMove, render }) {
+  const [d, setD] = useState(null);
+  const refs = useRef([]);
+  const start = (i, ev) => {
+    if (ev.button > 0) return;
+    ev.preventDefault();
+    const rects = items.map((_, k) => (refs.current[k] ? refs.current[k].getBoundingClientRect() : { top: 0, bottom: 0, height: 0 }));
+    const gap = rects.length > 1 ? Math.max(0, rects[1].top - rects[0].bottom) : 0;
+    try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (e) {}
+    setD({ i, y0: ev.clientY, dy: 0, rects, gap, over: i });
+  };
+  const move = ev => {
+    if (!d) return;
+    const dy = ev.clientY - d.y0, r = d.rects[d.i], c = r.top + r.height / 2 + dy;
+    let over = 0; d.rects.forEach((q, k) => { if (k !== d.i && c > q.top + q.height / 2) over++; });
+    setD({ ...d, dy, over });
+  };
+  const end = () => { if (d && d.over !== d.i) onMove(d.i, d.over); setD(null); };
+  const shift = k => { if (!d || k === d.i) return 0; const h = d.rects[d.i].height + d.gap; if (d.i < k && k <= d.over) return -h; if (d.over <= k && k < d.i) return h; return 0; };
+  const key = (k, ev) => {
+    if (ev.key === 'ArrowUp' && k > 0) { ev.preventDefault(); onMove(k, k - 1); }
+    if (ev.key === 'ArrowDown' && k < items.length - 1) { ev.preventDefault(); onMove(k, k + 1); }
+  };
+  return html`<div class=${'rl' + (d ? ' dragging' : '')}>${items.map((it, k) => {
+    const handle = html`<button class="grip" aria-label="Zum Verschieben ziehen, oder Pfeiltasten auf und ab" onPointerDown=${ev => start(k, ev)} onPointerMove=${move} onPointerUp=${end} onPointerCancel=${() => setD(null)} onKeyDown=${ev => key(k, ev)}>${I.grip}</button>`;
+    const drag = d && d.i === k;
+    return html`<div key=${keyOf(it)} ref=${el => { refs.current[k] = el; }} class=${'rl-item' + (drag ? ' drag' : '')} style=${d ? 'transform:translateY(' + (drag ? d.dy : shift(k)) + 'px)' : ''}>${render(it, k, handle)}</div>`;
+  })}</div>`;
+}
+function moveIn(arr, from, to) { const [x] = arr.splice(from, 1); arr.splice(to, 0, x); }
+function OrderSheet({ onClose }) {
+  const a = S.active, t = tpl(a && a.tpl);
+  const [, force] = useState(0);
+  if (!a || a.kind !== 'kraft') return null;
+  const planIds = t && t.exercises ? t.exercises.map(x => x.id) : [];
+  const sess = a.ex.map(e => e.id).filter(id => planIds.includes(id));
+  const differs = sess.join() !== planIds.filter(id => sess.includes(id)).join();
+  const savePlan = () => {
+    const pos = id => { const i = a.ex.findIndex(e => e.id === id); return i < 0 ? 1000 + planIds.indexOf(id) : i; };
+    t.exercises.sort((x, y) => pos(x.id) - pos(y.id)); saveSettings(); onClose(); toast('Neue Reihenfolge im Plan gespeichert');
+  };
+  return html`<${Sheet} onClose=${onClose} label="Reihenfolge">
+    <h2 class="h2">Reihenfolge</h2>
+    <p class="small muted" style="margin:0">Halte den Griff <span class="inl">${I.grip}</span> und zieh die Übung an ihren neuen Platz.</p>
+    <${ReorderList} items=${a.ex} keyOf=${e => e.id} onMove=${(f, to) => { moveIn(a.ex, f, to); touch(); force(n => n + 1); }}
+      render=${(e, k, h) => { const dn = e.sets.filter(s => s.done).length; return html`<div class="order-row">${h}<span class="grow"><b>${e.name}</b><div class="tiny faint">${dn ? dn + ' von ' + e.sets.length + ' Sätzen erledigt' : e.sets.length + ' Sätze'}</div></span>${dn === e.sets.length ? html`<span class="okdot">${I.check}</span>` : null}</div>`; }} />
+    ${differs && t ? html`<div class="stack" style="gap:8px"><button class="btn primary block" onClick=${savePlan}>Auch im Plan speichern</button><button class="btn block" onClick=${onClose}>Nur für heute</button></div>`
+      : html`<button class="btn primary block" onClick=${onClose}>Fertig</button>`}
+  </${Sheet}>`;
+}
+
 
 /* ---------- workout overlay ---------- */
 function Workout() {
@@ -1318,39 +1473,63 @@ function Workout() {
       </div>
       ${a.kind === 'kraft' && html`<${KraftLog} a=${a} />`}
       ${a.kind === 'boxen' && html`<${BoxLog} a=${a} />`}
-      ${a.kind === 'lauf' && html`<${RunLog} a=${a} />`}
+      ${a.kind === 'lauf' && html`<${RunLog} key=${a.id + '-' + (a.run.trackVer || 0)} a=${a} />`}
       <div class="sec"><label class="field"><span>Notiz</span>
         <textarea id=${'note-' + a.id} class="inp" placeholder="Wie lief's? Technik, Schlaf, Schmerzen …" value=${a.note || ''} onInput=${e => { a.note = e.target.value; saveActive(); }}></textarea></label></div>
     </div>
   </div>`;
 }
 function KraftLog({ a }) {
+  const cur = a.ex.findIndex(e => e.sets.some(s => !s.done));
+  const prev = useRef(cur);
+  useEffect(() => {
+    // nach der letzten Satz einer Übung sanft zur nächsten scrollen
+    if (prev.current >= 0 && cur >= 0 && cur !== prev.current && !quiet(a)) {
+      const el = document.getElementById('ex-' + a.ex[cur].id);
+      const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }), 350);
+    }
+    prev.current = cur;
+  }, [cur]);
+  const doneEx = a.ex.filter(e => e.sets.length && e.sets.every(s => s.done)).length;
   return html`<div class="stack">
-    ${a.ex.map((e, ei) => html`<${ExCard} key=${e.id + ei} a=${a} e=${e} ei=${ei} />`)}
+    <div class="row between"><span class="eyebrow">${doneEx} von ${a.ex.length} Übungen</span>
+      ${a.ex.length > 1 && html`<button class="btn sm ghost" onClick=${() => { S.sheet = { type: 'order' }; commit(); }}>${I.grip} Reihenfolge</button>`}</div>
+    ${a.ex.map((e, ei) => html`<${ExCard} key=${e.id} a=${a} e=${e} ei=${ei} now=${ei === cur && !quiet(a)} />`)}
     <button class="btn ghost block" onClick=${() => { S.sheet = { type: 'addEx' }; commit(); }}>${I.plus} Übung hinzufügen</button>
   </div>`;
 }
-function ExCard({ a, e, ei }) {
+function ExCard({ a, e, ei, now }) {
   const [restOpen, setRestOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const allDone = e.sets.length > 0 && e.sets.every(s => s.done);
+  if (allDone && !open && !quiet(a)) return html`<button id=${'ex-' + e.id} class="card ex-done" aria-expanded="false" onClick=${() => setOpen(true)}>
+    <span class="okdot">${I.check}</span><span class="grow" style="min-width:0;text-align:left"><b class="h3">${e.name}</b><div class="tiny faint data" style="letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.sets.map(s => fmtSet(e.bw, s, false)).join(' · ')}</div></span>
+    ${e.sets.some(s => s.pr) ? html`<span class="pr">PR</span>` : null}<span class="iconbtn" aria-hidden="true">${I.down}</span></button>`;
   const auto = !!pref('restByReps');
   const sugIcon = !e.sug ? null : e.sug.mode === 'up' ? I.up : e.sug.mode === 'low' ? I.alert : I.eq;
   const pw = s => fmtSet(e.bw, s, false);
   const sideIn = (s, si, k, l) => html`<${NumInput} id=${k + '-' + a.id + '-' + ei + '-' + si} label=${'Satz ' + (si + 1) + ' ' + l} decimals=${false} value=${s[k]} placeholder=${s.f ? 'max' : s.tr}
     onChange=${v => { s[k] = v == null ? null : Math.round(v); if (s.done) s.r = Math.min(s.rl != null ? s.rl : s.tr, s.rr != null ? s.rr : s.tr); touch(); }} />`;
-  return html`<div class="card ex">
+  return html`<div id=${'ex-' + e.id} class=${'card ex' + (now ? ' now' : '')}>
+    ${now && html`<div class="eyebrow now-tag">Jetzt dran</div>`}
+    ${allDone && open && !quiet(a) && html`<button class="link" style="align-self:flex-start" onClick=${() => setOpen(false)}>Einklappen</button>`}
     <div class="ex-title"><div class="grow"><div class="h3">${e.name}</div>
       <div class="row wrap" style="gap:4px 8px;margin-top:4px"><span class="tiny faint data" style="letter-spacing:0">${e.sets.length} × ${e.lo}–${e.hi} · +${fmtKg(e.inc)} kg</span>
-        ${!quiet(a) && html`<button class="restchip" aria-expanded=${restOpen ? 'true' : 'false'} onClick=${() => setRestOpen(!restOpen)}>Pause ${fmtDur(restFor(e))}${auto ? ' · auto' : ''}</button>`}
+        ${!quiet(a) && html`<button class="restchip" aria-expanded=${restOpen ? 'true' : 'false'} onClick=${() => setRestOpen(!restOpen)}>Pause ${fmtDur(restFor(e, a))}${auto ? ' · auto' : ''}</button>`}
         <button class="restchip" aria-pressed=${e.uni ? 'true' : 'false'} title="Wiederholungen für links und rechts getrennt" onClick=${() => setExUni(e, !e.uni)}>Einarmig</button>
         <button class="restchip" aria-pressed=${e.amrap ? 'true' : 'false'} title="Letzter Satz bis zum Muskelversagen (AMRAP)" onClick=${() => setExAmrap(e, !e.amrap)}>Letzter Satz: max</button></div></div>
       ${e.bar && html`<button class="btn sm ghost" onClick=${() => { const w = (e.sets.find(s => !s.done) || e.sets[0]).w; S.sheet = { type: 'plates', w: w || S.settings.prefs.bar }; commit(); }}>Scheiben</button>`}
     </div>
     ${restOpen && !quiet(a) && html`<div class="card flat stack" style="gap:8px;padding:12px">
-      ${auto ? html`<p class="small" style="margin:0">Automatisch: ${exTyp(e) === 'grund' ? 'Grundübung' : 'Isolationsübung'} mit ${e.lo}–${e.hi} Wdh. ergibt <b class="data">${fmtDur(restFor(e))}</b>. Die Art stellst du im Plan bei der Übung ein, die Automatik unter Plan → Erweitert.</p>`
-        : html`<div class="row between" style="gap:10px"><span class="small">Pause zwischen den Sätzen</span><div style="width:150px"><${Stepper} label="Pause" value=${e.rest || 90} min=${15} max=${600} step=${15} fmt=${fmtDur} onChange=${v => setExRest(e, v)} /></div></div>
-          <p class="tiny faint" style="margin:0">Gilt für diese Übung, auch in deinem Plan. Empfohlen für ${exTyp(e) === 'grund' ? 'diese Grundübung' : 'diese Isolationsübung'} mit ${e.lo}–${e.hi} Wdh.: <b class="data">${fmtDur(stdRest(e))}</b>.</p>
-          ${(e.rest || 90) !== stdRest(e) && html`<button class="btn sm" style="align-self:flex-start" onClick=${() => setExRest(e, stdRest(e))}>Empfehlung übernehmen</button>`}`}
+      ${auto ? html`<p class="small" style="margin:0">Immer nach Tabelle: ${restExplain(e, a)}. Abschalten unter Plan → Pausen.</p>`
+        : html`<div class="row between" style="gap:10px"><span class="small">Pause zwischen den Sätzen</span><div style="width:150px"><${Stepper} label="Pause" value=${restFor(e, a)} min=${15} max=${600} step=${15} fmt=${fmtDur} onChange=${v => setExRest(e, v)} /></div></div>
+          ${isManual(e) ? html`<p class="tiny faint" style="margin:0">Selbst eingestellt, gilt auch in deinem Plan. Empfehlung: <b class="data">${fmtDur(recRest(e, a))}</b> (${restExplain(e, a)}).</p>
+              <button class="btn sm" style="align-self:flex-start" onClick=${() => resetExRest(e)}>Empfehlung übernehmen</button>`
+            : html`<p class="tiny faint" style="margin:0">Empfehlung: ${restExplain(e, a)}. Änderst du sie, gilt das auch in deinem Plan.</p>`}`}
     </div>`}
+    ${e.dropTip && !e.dropTip.done && !quiet(a) && html`<div class="sug low">${I.alert}<span>Deine Wiederholungen fallen stark ab (${e.dropTip.from} → ${e.dropTip.to}). Eine längere Pause hilft meist, damit du mehr Wiederholungen schaffst.</span></div>
+      <div class="row wrap" style="gap:8px"><button class="btn sm" onClick=${() => { setExRest(e, restFor(e, a) + 30); e.dropTip.done = true; touch(); }}>+0:30 Pause für diese Übung</button><button class="btn sm ghost" onClick=${() => { e.dropTip.done = true; touch(); }}>Passt so</button></div>`}
     ${e.sug && html`<div class=${'sug ' + e.sug.mode}>${sugIcon}<span>${e.sug.text}${e.uni ? ' Gezählt wird der schwächere Arm.' : ''}${e.sets.some(s => s.f && !s.done) ? ' Satz mit MAX: so viele saubere Wiederholungen wie möglich.' : ''}</span></div>`}
     <div class="sets">
       <div class=${'set head' + (e.uni ? ' uni' : '')} aria-hidden="true"><span></span><span>Vorher</span><span>${e.bw ? '+kg' : 'kg'}</span>${e.uni ? html`<span>Links</span><span>Rechts</span>` : html`<span>Wdh</span>`}<span></span></div>
@@ -1384,7 +1563,7 @@ function RestDock() {
         <circle class="fg" cx="23" cy="23" r="19" stroke-dasharray=${C} stroke-dashoffset=${C * (1 - frac)} transform="rotate(-90 23 23)"/></svg>
       <div class="grow"><div class="dock-time">${over ? 'Los!' : fmtDur(Math.ceil(left))}</div><div class="tiny" style="opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.kind === 'switch' ? (over ? 'Weiter mit ' : 'Wechsel zu ') + r.label : over ? 'Nächster Satz' : 'Pause · ' + r.label}</div></div>
       ${!over && html`<button class="btn" aria-label="15 Sekunden weniger" onClick=${() => shiftRest(-15)}>−15</button><button class="btn" aria-label="15 Sekunden mehr" onClick=${() => shiftRest(15)}>+15</button>`}
-      <button class="btn c" onClick=${() => { S.rest = null; commit(); }}>${over ? 'OK' : 'Weiter'}</button>
+      <button class="btn c" onClick=${stopRest}>${over ? 'OK' : 'Weiter'}</button>
     </div></div>`;
 }
 
@@ -1452,6 +1631,7 @@ function RunLog({ a }) {
   const [dur, setDur] = useState(r.sec ? fmtDur(r.sec) : '');
   const best = bestPace < 1e9 ? cardioRate({ act, km: 1, sec: bestPace }) : null;
   return html`<div class="stack">
+    <${TrackCard} a=${a} />
     <div class="card stack" style="gap:14px">
       <div class="field"><span>Sportart</span><div class="chips">${Object.keys(ACTS).map(x => html`<button class=${'chip c' + (act === x ? ' on' : '')} onClick=${() => { r.act = x; touch(); }}>${x}</button>`)}</div></div>
       <div class="field"><span>Art</span><div class="chips">${RUN_ARTS.map(x => html`<button class=${'chip c' + (r.art === x ? ' on' : '')} onClick=${() => { r.art = x; touch(); }}>${x}</button>`)}</div></div>
@@ -1546,6 +1726,216 @@ function DurInput({ id, value, onChange, placeholder = '3:00' }) {
     onFocus=${() => setDraft(shown)} onInput=${e => { setDraft(e.target.value); onChange(parseDur(e.target.value)); }} onBlur=${() => setDraft(null)} />`;
 }
 
+/* Woraus sich die empfohlene Pause zusammensetzt, in Worten */
+function restExplain(e, a) {
+  if (exGroup(e) === 'Rumpf') return 'Rumpfübung: ' + fmtDur(60);
+  const parts = [(exTyp(e) === 'grund' ? 'Grundübung' : 'Isolation') + ' mit ' + e.lo + '–' + e.hi + ' Wdh.: ' + fmtDur(stdRest(e))];
+  const st = pref('restStyle') || 'normal';
+  if (st !== 'normal') parts.push('Pausen-Stil ' + REST_STYLES[st][0].toLowerCase() + ': ' + fmtDur(styledRest(stdRest(e))));
+  if (a && pref('restMuscle') !== false && muscleBefore(a, e)) parts.push('+0:30, weil ' + exGroup(e) + ' heute schon dran war');
+  return parts.join(', ');
+}
+
+
+/* ---------- GPS-Tracking für Ausdauer-Einheiten ----------
+   Browser: navigator.geolocation, läuft nur bei eingeschaltetem Bildschirm.
+   Formkurve-App (iPhone-Hülle): Plugin BackgroundGeolocation, läuft auch gesperrt weiter.
+   Punkte: [lat, lng, sekunden]; null trennt Abschnitte (nach einer Pause). */
+const TR = { watch: null, nativeId: null };
+function hav(a, b) {
+  const R = 6371000, k = Math.PI / 180, dLat = (b[0] - a[0]) * k, dLon = (b[1] - a[1]) * k;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * k) * Math.cos(b[0] * k) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+function trackElapsed(L) { return Math.max(0, ((L.paused ? L.pauseAt : Date.now()) - L.t0 - L.pausedMs) / 1000); }
+function trackDistOf(pts) { let d = 0; for (let i = 1; i < pts.length; i++) if (pts[i] && pts[i - 1]) d += hav(pts[i - 1], pts[i]); return d; }
+/* Kilometer-Zwischenzeiten aus Punkten (für GPX-Import) */
+function splitsOf(pts) {
+  const out = []; let d = 0, t0 = null, moving = 0, prev = null;
+  for (const p of pts) {
+    if (!p) { prev = null; continue; }
+    if (t0 == null) t0 = p[2];
+    if (prev) { const seg = hav(prev, p); const before = d; d += seg; moving += p[2] - prev[2]; if (Math.floor(d / 1000) > Math.floor(before / 1000)) out.push(Math.round(moving)); }
+    prev = p;
+  }
+  return out;
+}
+function trackStart() {
+  const a = S.active; if (!a || a.kind !== 'lauf') return;
+  const r = a.run;
+  if (!r.live || !r.live.on) r.live = { on: true, paused: false, t0: Date.now(), pausedMs: 0, pauseAt: 0, dist: 0, pts: [], splits: [], acc: null };
+  unlockAudio(); wakeOn(); trackWatch(); touch();
+}
+function trackWatch() {
+  trackUnwatch();
+  const BG = nativePlugin('BackgroundGeolocation');
+  if (BG) {
+    try {
+      BG.addWatcher({ backgroundMessage: 'Formkurve zeichnet deine Einheit auf.', backgroundTitle: 'Tracking läuft', requestPermissions: true, stale: false, distanceFilter: 3 }, (loc, err) => {
+        if (err) { if (err.code === 'NOT_AUTHORIZED') toast('Standort nicht erlaubt. Erlaube ihn in den iPhone-Einstellungen für Formkurve („Immer“).'); return; }
+        if (loc) trackPoint(loc.latitude, loc.longitude, loc.accuracy, loc.time || Date.now());
+      }).then(id => { TR.nativeId = id; }).catch(() => toast('GPS konnte nicht starten.'));
+    } catch (e) { toast('GPS konnte nicht starten.'); }
+    return;
+  }
+  if (!navigator.geolocation) { toast('Dieses Gerät liefert keinen Standort.'); return; }
+  TR.watch = navigator.geolocation.watchPosition(
+    p => trackPoint(p.coords.latitude, p.coords.longitude, p.coords.accuracy, p.timestamp || Date.now()),
+    err => toast(err.code === 1 ? 'Standort nicht erlaubt. Erlaube ihn für diese Seite in den Einstellungen.' : 'Noch kein GPS-Signal. Geh am besten ins Freie.'),
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+}
+function trackUnwatch() {
+  if (TR.watch != null && navigator.geolocation) navigator.geolocation.clearWatch(TR.watch);
+  TR.watch = null;
+  const BG = nativePlugin('BackgroundGeolocation');
+  if (BG && TR.nativeId) { try { BG.removeWatcher({ id: TR.nativeId }).catch(() => {}); } catch (e) {} }
+  TR.nativeId = null;
+}
+function trackPoint(lat, lng, acc, t) {
+  const a = S.active, L = a && a.run && a.run.live;
+  if (!L || !L.on || L.paused) return;
+  L.acc = Math.round(acc || 0);
+  if (!(acc <= 35)) { commit(); return; }                       // zu ungenau
+  const p = [Math.round(lat * 1e5) / 1e5, Math.round(lng * 1e5) / 1e5, Math.round(t / 1000)];
+  const last = L.pts.length ? L.pts[L.pts.length - 1] : null;
+  if (last) {
+    const d = hav(last, p), dt = (t - (L.lastMs || t)) / 1000;
+    if (d < Math.max(4, acc * 0.4)) { commit(); return; }       // Zittern im Stand
+    if (dt > 0.5 && d / dt > 12) { commit(); return; }            // Sprung (über 43 km/h), kein Laufen
+    const before = L.dist; L.dist += d;
+    const k = Math.floor(L.dist / 1000);
+    if (k > Math.floor(before / 1000)) {
+      const el = Math.round(trackElapsed(L)), lap = el - (L.splits.length ? L.splits[L.splits.length - 1] : 0);
+      L.splits.push(el); beep([880, 1175], 0.12, 0.15);
+      say('Kilometer ' + k + '. ' + Math.floor(lap / 60) + ' Minuten ' + (lap % 60) + '.');
+    }
+  }
+  L.pts.push(p); L.lastMs = t;
+  if (L.pts.length > 4000) L.pts = L.pts.filter((q, i) => q === null || i % 2 === 0 || i === L.pts.length - 1);
+  saveActive(); commit();
+}
+function trackPause() { const L = S.active && S.active.run.live; if (!L || L.paused) return; L.paused = true; L.pauseAt = Date.now(); touch(); }
+function trackResume() { const L = S.active && S.active.run.live; if (!L || !L.paused) return; L.pausedMs += Date.now() - L.pauseAt; L.paused = false; if (L.pts.length) L.pts.push(null); L.lastMs = 0; touch(); }
+function trackStop() {
+  const a = S.active, r = a && a.run, L = r && r.live; if (!L) return;
+  if (L.paused) { L.pausedMs += Date.now() - L.pauseAt; L.paused = false; }
+  trackUnwatch();
+  const sec = Math.round(trackElapsed(L));
+  if (L.dist >= 50) { r.km = Math.round(L.dist / 10) / 100; r.sec = sec; r.track = L.pts; r.splits = L.splits; }
+  r.live = null; r.trackVer = (r.trackVer || 0) + 1;
+  toast(L.dist >= 50 ? 'Aufgezeichnet: ' + fmt1(L.dist / 1000) + ' km in ' + fmtDur(sec) : 'Zu kurz für eine Aufzeichnung');
+  saveActive(true); commit();
+}
+function trackDiscard() { const r = S.active && S.active.run; if (!r) return; trackUnwatch(); r.live = null; r.trackVer = (r.trackVer || 0) + 1; touch(); }
+/* aktuelles Tempo aus den letzten 30 Sekunden */
+function trackNowPace(L) {
+  const pts = L.pts; if (pts.length < 2) return null;
+  const tEnd = pts[pts.length - 1] && pts[pts.length - 1][2]; if (!tEnd) return null;
+  let d = 0, t = 0;
+  for (let i = pts.length - 1; i > 0; i--) { const a = pts[i - 1], b = pts[i]; if (!a || !b) break; d += hav(a, b); t = tEnd - a[2]; if (t >= 30) break; }
+  return d > 20 && t > 0 ? t / (d / 1000) : null;
+}
+/* GPX-Datei (z. B. aus Strava, Garmin, Apple Watch) einlesen */
+function importGpx(file) {
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const doc = new DOMParser().parseFromString(String(fr.result), 'application/xml');
+      if (doc.getElementsByTagName('parsererror').length) throw new Error('xml');
+      const segs = [...doc.getElementsByTagName('trkseg')];
+      const groups = segs.length ? segs.map(s => [...s.getElementsByTagName('trkpt')]) : [[...doc.getElementsByTagName('trkpt'), ...doc.getElementsByTagName('rtept')]];
+      const pts = [];
+      groups.forEach(g => {
+        if (pts.length && g.length) pts.push(null);
+        g.forEach(n => {
+          const lat = parseFloat(n.getAttribute('lat')), lon = parseFloat(n.getAttribute('lon'));
+          const tn = n.getElementsByTagName('time')[0], t = tn ? Date.parse(tn.textContent) : NaN;
+          if (isFinite(lat) && isFinite(lon)) pts.push([Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5, isFinite(t) ? Math.round(t / 1000) : 0]);
+        });
+      });
+      const real = pts.filter(Boolean);
+      if (real.length < 2) throw new Error('leer');
+      const dist = trackDistOf(pts), hasTime = real[0][2] > 0 && real[real.length - 1][2] > real[0][2];
+      const a = S.active, r = a.run;
+      const slim = pts.length > 4000 ? pts.filter((q, i) => q === null || i % Math.ceil(pts.length / 4000) === 0) : pts;
+      r.km = Math.round(dist / 10) / 100; r.track = slim; r.trackVer = (r.trackVer || 0) + 1;
+      if (hasTime) {
+        r.sec = real[real.length - 1][2] - real[0][2]; r.splits = splitsOf(pts);
+        a.date = dkey(new Date(real[0][2] * 1000)); a.start = real[0][2] * 1000; a.durMin = Math.max(5, Math.ceil(r.sec / 60));
+      }
+      saveActive(true);
+      toast('GPX importiert: ' + fmt1(dist / 1000) + ' km' + (hasTime ? ' in ' + fmtDur(r.sec) : ''));
+    } catch (e) { toast('Datei nicht erkannt. Wähle eine GPX-Datei aus deiner Uhr oder Lauf-App.'); }
+    commit();
+  };
+  fr.readAsText(file);
+}
+function resumeTrackingAfterReload() {
+  const a = S.active, L = a && a.kind === 'lauf' && a.run && a.run.live;
+  if (L && L.on) { if (L.pts.length) L.pts.push(null); if (!L.paused) setTimeout(trackWatch, 600); toast('GPS-Tracking läuft weiter'); }
+}
+
+/* ---------- Strecke als Linie (ohne Karte) ---------- */
+function RouteSvg({ pts, h = 170, live }) {
+  const real = (pts || []).filter(Boolean);
+  if (real.length < 2) return html`<div class="route-empty tiny faint">${live ? 'Warte auf GPS-Signal …' : 'Keine Strecke'}</div>`;
+  const W = 320, pad = 10;
+  const lat0 = real.reduce((s, p) => s + p[0], 0) / real.length, kx = Math.cos(lat0 * Math.PI / 180);
+  const xs = real.map(p => p[1] * kx), ys = real.map(p => -p[0]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const sc = Math.min((W - 2 * pad) / Math.max(maxX - minX, 1e-6), (h - 2 * pad) / Math.max(maxY - minY, 1e-6));
+  const ox = (W - (maxX - minX) * sc) / 2, oy = (h - (maxY - minY) * sc) / 2;
+  const P = p => [(p[1] * kx - minX) * sc + ox, (-p[0] - minY) * sc + oy];
+  let d = '', pen = false;
+  for (const p of pts) { if (!p) { pen = false; continue; } const [x, y] = P(p); d += (pen ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); pen = true; }
+  const s = P(real[0]), e = P(real[real.length - 1]);
+  return html`<svg class="route" viewBox=${'0 0 ' + W + ' ' + h} role="img" aria-label="Aufgezeichnete Strecke">
+    <path d=${d} fill="none" stroke="var(--c)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx=${s[0]} cy=${s[1]} r="5" fill="var(--surface)" stroke="var(--c)" stroke-width="2.5"/>
+    <circle cx=${e[0]} cy=${e[1]} r="5.5" fill="var(--c)" stroke="var(--surface)" stroke-width="2"/>
+  </svg>`;
+}
+function SplitsTable({ splits, act }) {
+  if (!splits || !splits.length) return null;
+  const laps = splits.map((t, i) => t - (i ? splits[i - 1] : 0)), best = Math.min(...laps);
+  return html`<div class="tablewrap" style="margin:0"><table><thead><tr><th>km</th><th class="n">Zeit</th><th class="n">${(ACTS[act] || ACTS.Laufen).speed ? 'km/h' : 'Tempo'}</th></tr></thead><tbody>
+    ${laps.map((l, i) => html`<tr><td style="padding-left:0">${i + 1}${l === best && laps.length > 1 ? html` <span class="pr">TOP</span>` : ''}</td><td class="n">${fmtDur(splits[i])}</td><td class="n" style="padding-right:0">${cardioRate({ act, km: 1, sec: l }).main}</td></tr>`)}</tbody></table></div>`;
+}
+
+/* ---------- Live-Ansicht im Ausdauer-Eintrag ---------- */
+function TrackCard({ a }) {
+  const r = a.run, L = r.live, act = r.act || 'Laufen', gpxRef = useRef(null);
+  const app = !!Cap();
+  if (L && L.on) {
+    const el = trackElapsed(L), km = L.dist / 1000, avg = cardioRate({ act, km, sec: el }), nowP = trackNowPace(L);
+    const nowR = nowP ? cardioRate({ act, km: 1, sec: nowP }) : null;
+    return html`<div class="card stack track-live" style="gap:12px">
+      <div class="row between"><span class="eyebrow">${L.paused ? 'Pausiert' : 'Tracking läuft'}</span>
+        <span class=${'gps ' + (L.acc == null ? '' : L.acc <= 15 ? 'ok' : L.acc <= 35 ? 'mid' : 'bad')}><i></i>${L.acc == null ? 'Suche GPS' : 'GPS ±' + L.acc + ' m'}</span></div>
+      <div class="track-big"><div><b class="data">${km.toFixed(2).replace('.', ',')}</b><span>km</span></div><div><b class="data">${fmtDur(el)}</b><span>Zeit</span></div></div>
+      <div class="grid2">
+        <div><div class="eyebrow">Schnitt</div><div class="data" style="font-size:18px;margin-top:3px">${avg.main} <span class="tiny faint">${avg.unit}</span></div></div>
+        <div><div class="eyebrow">Aktuell</div><div class="data" style="font-size:18px;margin-top:3px">${nowR ? nowR.main : '–'} <span class="tiny faint">${nowR ? nowR.unit : ''}</span></div></div>
+      </div>
+      <${RouteSvg} pts=${L.pts} live=${true} />
+      <${SplitsTable} splits=${L.splits} act=${act} />
+      ${!app && html`<p class="tiny warnline" style="margin:0">Lass den Bildschirm an. Im Browser stoppt das GPS, sobald du das Handy sperrst. In der Formkurve-App läuft es auch gesperrt weiter.</p>`}
+      <div class="row" style="gap:8px">
+        ${L.paused ? html`<button class="btn c grow" onClick=${trackResume}>Weiter</button>` : html`<button class="btn grow" onClick=${trackPause}>Pause</button>`}
+        <button class="btn primary grow" onClick=${trackStop}>Stopp & übernehmen</button>
+      </div>
+      <${Confirm} label="Aufzeichnung verwerfen" yes="Verwerfen" onYes=${trackDiscard} />
+    </div>`;
+  }
+  return html`<div class="card stack" style="gap:10px">
+    <div class="row between"><b class="h3">GPS-Tracking</b>${r.track && html`<span class="tiny faint">${fmt1(r.km)} km aufgezeichnet</span>`}</div>
+    ${r.track ? html`<${RouteSvg} pts=${r.track} /><${SplitsTable} splits=${r.splits} act=${act} />` : html`<p class="small muted" style="margin:0">Zeichnet Distanz, Zeit, Tempo, Kilometer-Zwischenzeiten und deine Strecke auf.${app ? '' : ' Im Browser muss der Bildschirm dafür anbleiben.'}</p>`}
+    ${!quiet(a) && html`<button class="btn c block" onClick=${trackStart}>${I.pin} ${r.track ? 'Neu aufzeichnen' : 'Tracking starten'}</button>`}
+    <button class="btn block" onClick=${() => gpxRef.current && gpxRef.current.click()}>GPX-Datei importieren</button>
+    <input id=${'gpx-' + a.id} ref=${gpxRef} type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" hidden onChange=${e => { const f = e.target.files && e.target.files[0]; if (f) importGpx(f); e.target.value = ''; }} />
+  </div>`;
+}
+
 
 /* ---------- history ---------- */
 function HistoryView() {
@@ -1589,6 +1979,7 @@ function SessionDetail({ s }) {
       <td class="n" style="white-space:normal;padding-right:0">${e.sets.map(x => fmtSet(e.bw, x)).join('  ')}</td></tr>`)}</tbody></table>`}
     ${s.kind === 'boxen' && html`<div class="meta"><span>${s.box.art}</span><span><b>${s.box.rounds} × ${fmtDur(s.box.round)}</b></span><span>Pause <b>${fmtDur(s.box.rest)}</b></span></div>`}
     ${s.kind === 'lauf' && html`<div class="meta"><span>${s.run.act || 'Laufen'} · ${s.run.art}</span><span><b>${fmt1(s.run.km)} km</b></span><span><b>${fmtDur(s.run.sec)}</b></span><span><b>${cardioRate(s.run).main}</b> ${cardioRate(s.run).unit}</span>${s.run.hr ? html`<span><b>${s.run.hr}</b> bpm</span>` : null}</div>`}
+    ${s.kind === 'lauf' && s.run.track && html`<${RouteSvg} pts=${s.run.track} h=${150} /><${SplitsTable} splits=${s.run.splits} act=${s.run.act || 'Laufen'} />`}
     ${s.note && html`<p class="small muted" style="margin:0;white-space:pre-wrap">${s.note}</p>`}
     <div class="row wrap" style="gap:8px"><button class="btn sm" onClick=${() => editSession(s.id)}>Bearbeiten</button>
       <${Confirm} label="Löschen" yes="Endgültig löschen" onYes=${() => deleteSession(s.id)} /></div>
@@ -1951,7 +2342,9 @@ function Plan() {
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Einstellungen</h2>
       <div class="field" style="padding:6px 0"><span>Design</span><div class="seg">${[['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => html`<button class=${p.theme === k ? 'on' : ''} onClick=${() => { setPref('theme', k); applyTheme(); }}>${l}</button>`)}</div></div>
-      <${Toggle} on=${p.sound} label="Töne" hint="Pausenende, Gong im Rundentimer" onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
+      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Pausenende und Gong, auch im Stummmodus und mit Sperrbildschirm-Hinweis' : 'Pausenende, Gong im Rundentimer. Im Stummmodus kann das iPhone Töne der Webseite unterdrücken, in der Formkurve-App nicht.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
+      <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Kurzes Piepen in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); beep([660], 0.07); } }} />
+      <hr class="hr" /><${Toggle} on=${!!p.voice} label="Sprachansage" hint="Sagt an, was als Nächstes kommt, zum Beispiel „Pause vorbei. Butterfly, Satz 3“" onChange=${v => { setPref('voice', v); if (v) { _voiceReady = false; unlockAudio(); setTimeout(() => say('Pause vorbei. Butterfly, Satz 3'), 150); } }} />
       <hr class="hr" /><${Toggle} on=${p.vibrate} label="Vibration" hint="Auf Android; iPhones unterstützen das im Browser nicht" onChange=${v => setPref('vibrate', v)} />
       <hr class="hr" />
       <div class="grid2" style="padding-top:8px">
@@ -1963,8 +2356,11 @@ function Plan() {
     <section class="card stack" style="gap:6px"><h2 class="h3">Pausen</h2>
       <p class="small muted" style="margin:0 0 4px">So rechnet Formkurve die Pause zwischen zwei Sätzen. Maßgeblich ist der untere Wert des Wiederholungsbereichs.</p>
       <div class="tablewrap" style="margin:0 0 4px"><table><thead><tr><th>Wdh.</th><th class="n">Grundübung</th><th class="n">Isolation</th></tr></thead><tbody>
-        ${REST_TABLE.map(([l, , g, i]) => html`<tr><td style="padding-left:0">${l}</td><td class="n">${fmtDur(g)}</td><td class="n" style="padding-right:0">${fmtDur(i)}</td></tr>`)}</tbody></table></div>
-      <p class="tiny faint" style="margin:0 0 6px">Grundübungen wie Bankdrücken, Kniebeuge oder Rudern beanspruchen viel Muskelmasse und brauchen länger als Isolationsübungen wie Curls oder Seitheben. Bauch und Rumpf: 1:00. Beispiel: Hammercurls mit 8–12 Wdh. bekommen 1:30, Bankdrücken mit 6–10 Wdh. 2:30. Pausen, die du selbst einstellst, bleiben so.</p>
+        ${REST_TABLE.map(([l, , g, i]) => html`<tr><td style="padding-left:0">${l}</td><td class="n">${fmtDur(styledRest(g))}</td><td class="n" style="padding-right:0">${fmtDur(styledRest(i))}</td></tr>`)}</tbody></table></div>
+      <p class="tiny faint" style="margin:0 0 6px">Grundübungen wie Bankdrücken, Kniebeuge oder Rudern beanspruchen viel Muskelmasse und brauchen länger als Isolationsübungen wie Curls oder Butterfly. Bauch und Rumpf: 1:00. Pausen, die du selbst einstellst, bleiben so.</p>
+      <div class="field" style="padding:4px 0 6px"><span>Pausen-Stil</span><div class="seg" role="group" aria-label="Pausen-Stil">${Object.entries(REST_STYLES).map(([k, [l]]) => html`<button class=${(p.restStyle || 'normal') === k ? 'on' : ''} aria-pressed=${(p.restStyle || 'normal') === k ? 'true' : 'false'} onClick=${() => setPref('restStyle', k)}>${l}</button>`)}</div>
+        <span class="tiny faint" style="font-weight:400">Kurz: 25 % weniger, Lang: 25 % mehr als die Tabelle. Gilt für alle empfohlenen Pausen.</span></div>
+      <hr class="hr" /><${Toggle} on=${p.restMuscle !== false} label="Mehr Pause, wenn der Muskel schon dran war" hint=${'Ab der zweiten Übung für denselben Muskel in einer Einheit +0:30, zum Beispiel Butterfly nach Bankdrücken.'} onChange=${v => setPref('restMuscle', v)} />
       <hr class="hr" /><${Toggle} on=${p.restAuto !== false} label="Pausentimer automatisch starten" hint="Startet nach jedem abgehakten Satz. Aus: kein Timer, du trainierst nach Gefühl." onChange=${v => setPref('restAuto', v)} />
       <hr class="hr" /><${Toggle} on=${p.restSwitch !== false} label="Wechselpause zwischen Übungen" hint=${'Nach dem letzten Satz einer Übung: die längere Pause der beiden Übungen, mindestens ' + fmtDur(SWITCH_MIN) + '. Zeit zum Umbauen und Erholen.'} onChange=${v => setPref('restSwitch', v)} />
       <hr class="hr" /><${Toggle} on=${!!p.restByReps} label="Immer nach Tabelle" hint="Auch selbst eingestellte Pausen folgen dann der Tabelle." onChange=${v => setPref('restByReps', v)} />
@@ -1988,14 +2384,13 @@ function Plan() {
       </div>
       <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Einheiten im Verlauf.</p>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.3</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
   const st = S.settings, t = tpl(id); const [openEx, setOpenEx] = useState(openId || null);
   if (!t) return null;
   const ch = () => saveSettings();
-  const move = (i, d) => { const a = t.exercises, j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; ch(); };
   return html`<${Sheet} onClose=${onClose} label=${'Einheit ' + t.name}>
     <div class=${'row t-' + t.color}><span class="disc lg"></span><input id=${'tpl-name-' + t.id} class="inp grow" style="font:800 26px var(--font-display);text-transform:uppercase" value=${t.name} aria-label="Name" onInput=${e => { t.name = e.target.value; ch(); }} /></div>
     <div class="field"><span>Farbe</span><div class="chips">${COLORS.map(c => html`<button class=${'chip c t-' + c + (t.color === c ? ' on' : '')} onClick=${() => { t.color = c; ch(); }}><span class="disc sm"></span>${COLOR_NAMES[c]}</button>`)}</div></div>
@@ -2003,11 +2398,11 @@ function TplSheet({ id, openId, onClose }) {
     ${t.kind === 'kraft' && html`<div class="stack" style="gap:0">
       <div class="eyebrow" style="margin-bottom:4px">Übungen</div>
       ${!t.exercises.length && html`<p class="small muted" style="margin:6px 0">Noch keine Übungen. Füge welche aus der Bibliothek hinzu.</p>`}
-      ${t.exercises.map((e, i) => html`<div class="edit-ex" key=${e.id}>
-        <div class="row"><button class="grow" style="text-align:left" aria-expanded=${openEx === e.id ? 'true' : 'false'} onClick=${() => setOpenEx(openEx === e.id ? null : e.id)}>
+      ${t.exercises.length > 1 && html`<p class="tiny faint" style="margin:0 0 4px">Reihenfolge ändern: Griff <span class="inl">${I.grip}</span> halten und ziehen.</p>`}
+      <${ReorderList} items=${t.exercises} keyOf=${e => e.id} onMove=${(f, to) => { moveIn(t.exercises, f, to); ch(); }} render=${(e, i, grip) => html`<div class="edit-ex">
+        <div class="row">${grip}<button class="grow" style="text-align:left" aria-expanded=${openEx === e.id ? 'true' : 'false'} onClick=${() => setOpenEx(openEx === e.id ? null : e.id)}>
           <b>${e.name || 'Ohne Namen'}</b><div class="tiny faint data" style="letter-spacing:0">${e.sets} × ${e.lo}–${e.hi} · +${fmtKg(e.inc)} kg · Pause ${fmtDur(restFor(e))} · ${exTyp(e) === 'grund' ? 'Grund' : 'Iso'}${e.uni ? ' · einarmig' : ''}${e.amrap ? ' · max' : ''}${e.bar ? ' · Stange' : ''}${e.bw ? ' · KG' : ''}</div></button>
-          <button class="iconbtn" aria-label="nach oben" disabled=${i === 0} onClick=${() => move(i, -1)}>${I.arrowU}</button>
-          <button class="iconbtn" aria-label="nach unten" disabled=${i === t.exercises.length - 1} onClick=${() => move(i, 1)}>${I.down}</button></div>
+          <span class="iconbtn" aria-hidden="true" style="transform:rotate(${openEx === e.id ? 180 : 0}deg)">${I.down}</span></div>
         ${openEx === e.id && html`<div class="stack" style="gap:10px">
           <label class="field"><span>Name</span><input id=${'ex-name-' + e.id} class="inp" value=${e.name} onInput=${ev => { e.name = ev.target.value; ch(); }} /></label>
           <div class="field"><span>Art</span><div class="seg" role="group" aria-label="Art der Übung">${[['grund', 'Grundübung'], ['iso', 'Isolation']].map(([k, l]) => html`<button class=${exTyp(e) === k ? 'on' : ''} aria-pressed=${exTyp(e) === k ? 'true' : 'false'} onClick=${() => { e.typ = k; if (!e.restManual) e.rest = stdRest(e); ch(); }}>${l}</button>`)}</div></div>
@@ -2017,17 +2412,17 @@ function TplSheet({ id, openId, onClose }) {
             <label class="field"><span>bis</span><${Stepper} label="Wiederholungen bis" value=${e.hi} min=${e.lo} max=${50} onChange=${v => { e.hi = v; ch(); }} /></label>
             <label class="field"><span>Stufe (kg)</span><${Stepper} label="Steigerung" value=${e.inc} min=${0.5} max=${10} step=${0.5} fmt=${fmtKg} onChange=${v => { e.inc = v; ch(); }} /></label>
             ${pref('restByReps') ? html`<div class="field"><span>Pause</span><div class="inp num" style="display:grid;place-items:center;font-size:14px">auto ${fmtDur(restFor(e))}</div></div>`
-              : html`<label class="field"><span>Pause</span><${Stepper} label="Pause" value=${e.rest || stdRest(e)} min=${15} max=${600} step=${15} fmt=${fmtDur} onChange=${v => { e.rest = v; e.restManual = v !== stdRest(e); ch(); }} /></label>`}
+              : html`<label class="field"><span>Pause${isManual(e) ? ' (eigene)' : ''}</span><${Stepper} label="Pause" value=${restFor(e)} min=${15} max=${600} step=${15} fmt=${fmtDur} onChange=${v => { const m = v !== styledRest(stdRest(e)); e.rest = m ? v : stdRest(e); e.restManual = m; ch(); }} /></label>`}
             <label class="field"><span>Startgewicht</span><${NumInput} id=${'ex-start-' + e.id} value=${e.start} placeholder="kg" onChange=${v => { e.start = v; ch(); }} /></label>
           </div>
           <${Toggle} on=${e.bar} label="Langhantel" hint="Zeigt den Scheibenrechner" onChange=${v => { e.bar = v; ch(); }} />
           <${Toggle} on=${e.bw} label="Körpergewicht" hint="Eingetragenes Gewicht zählt als Zusatzgewicht" onChange=${v => { e.bw = v; ch(); }} />
-          ${!pref('restByReps') && (e.rest || 0) !== stdRest(e) && html`<button class="btn sm" style="align-self:flex-start" onClick=${() => { e.rest = stdRest(e); e.restManual = false; ch(); }}>Pause auf Empfehlung (${fmtDur(stdRest(e))})</button>`}
+          ${!pref('restByReps') && isManual(e) && html`<button class="btn sm" style="align-self:flex-start" onClick=${() => { e.rest = stdRest(e); e.restManual = false; ch(); }}>Pause auf Empfehlung (${fmtDur(styledRest(stdRest(e)))})</button>`}
           <${Toggle} on=${!!e.amrap} label="Letzter Satz bis zum Muskelversagen" hint="AMRAP: so viele saubere Wiederholungen wie möglich. Du trägst ein, wie viele es waren." onChange=${v => { e.amrap = v; ch(); }} />
           <${Toggle} on=${!!e.uni} label="Einarmig / einseitig" hint="Pro Satz ein Gewicht, Wiederholungen für links und rechts getrennt. Für die Steigerung zählt der schwächere Arm." onChange=${v => { e.uni = v; ch(); }} />
           <${Confirm} label="Übung entfernen" yes="Entfernen" onYes=${() => { t.exercises.splice(i, 1); ch(); }} />
         </div>`}
-      </div>`)}
+      </div>`} />
       <button class="btn sm" style="margin-top:10px;align-self:flex-start" onClick=${() => { S.sheet = { type: 'libTpl', id: t.id }; commit(); }}>+ Übung aus der Bibliothek</button>
     </div>`}
     ${t.kind === 'boxen' && html`<div class="grid2">
