@@ -919,11 +919,11 @@ async function nativeNotifyPerm() {
   return _notifPerm;
 }
 async function testNotify() {
-  unlockAudio(); beep([880, 1175], 0.12, 0.15);
+  unlockAudio(); sfx('end');
   if (!(await nativeNotifyPerm())) { toast('Mitteilungen sind aus. Erlaube sie unter iPhone-Einstellungen → Formkurve → Mitteilungen.'); return; }
   const at = Date.now() + 6000;
   nativeNotify(103, at, 'Pause vorbei', 'So meldet sich Formkurve, auch bei gesperrtem iPhone.');
-  setTimeout(() => { if (document.visibilityState === 'visible') { beep([880, 1175, 1568], 0.14, 0.16); toast('So klingt das Pausenende'); } }, 6000);
+  setTimeout(() => { if (document.visibilityState === 'visible') { sfx('end'); toast('So klingt das Pausenende'); } }, 6000);
   toast('Sperr jetzt dein iPhone. In 6 Sekunden kommt die Mitteilung.');
 }
 async function nativeNotify(id, at, title, body) {
@@ -1005,6 +1005,27 @@ function tone(c, f, t, dur, vol, type = 'sine') {
   const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+/* ---------- Klänge: drei Klangfarben, im Browser und in der App gleich ----------
+   Jeder Klang ist eine Liste von Teiltönen { f: Hz, t: Start s, d: Ausklingen s, v: Lautstärke }. */
+const mar = (f, t = 0, v = 0.5, d = 0.7) => [{ f, t, d, v }, { f: f * 3.98, t, d: d * 0.22, v: v * 0.2 }, { f: f * 9.1, t, d: d * 0.07, v: v * 0.05 }];
+const bl = (f, t = 0, v = 0.5, d = 1.4) => [[1, 1], [2.02, 0.42], [2.76, 0.3], [5.4, 0.12]].map(([m, a]) => ({ f: f * m, t, d: d / Math.sqrt(m), v: v * a }));
+const sine = (fs, d, gap, v = 0.35) => fs.map((f, i) => ({ f, t: i * gap, d, v }));
+const SOUNDS = {
+  marimba: { label: 'Marimba', tick: () => mar(784, 0, 0.32, 0.3), last: () => mar(1047, 0, 0.38, 0.34),
+    end: () => [...mar(784, 0, 0.42), ...mar(988, 0.11, 0.42), ...mar(1175, 0.22, 0.42), ...mar(1568, 0.34, 0.5, 1.1)],
+    km: () => [...mar(988, 0, 0.45), ...mar(1319, 0.14, 0.5, 0.9)] },
+  glocke: { label: 'Glocke', tick: () => bl(1319, 0, 0.18, 0.45), last: () => bl(1568, 0, 0.22, 0.55),
+    end: () => [...bl(880, 0, 0.45, 1.8), ...bl(659, 0.36, 0.45, 2.2)], km: () => [...bl(988, 0, 0.4, 1.2), ...bl(1319, 0.2, 0.4, 1.4)] },
+  klassisch: { label: 'Klassisch', tick: () => sine([660], 0.07, 0), last: () => sine([880], 0.09, 0),
+    end: () => sine([880, 1175, 1568], 0.14, 0.16), km: () => sine([880, 1175], 0.12, 0.15) }
+};
+function sfx(name) {
+  if (pref('sound') === false) return;
+  const set = SOUNDS[pref('soundSet')] || SOUNDS.marimba, list = (set[name] || set.end)();
+  if (playTones(list)) return;
+  const c = audio(); if (!c) return; const t0 = c.currentTime + 0.02;
+  list.forEach(x => tone(c, x.f, t0 + x.t, x.d, x.v));
 }
 function beep(freqs = [880, 1175], dur = 0.13, gap = 0.17) { if (pref('sound') === false) return; if (playTones(freqs.map((f, i) => ({ f, t: i * gap, d: dur, v: 0.35 })))) return; const c = audio(); if (!c) return; const t0 = c.currentTime + 0.02; freqs.forEach((f, i) => tone(c, f, t0 + i * gap, dur, 0.35)); }
 const BELL = [[1, .5], [2.02, .22], [2.76, .18], [5.4, .08], [8.93, .04]];
@@ -1252,7 +1273,7 @@ function deleteSession(id) {
 function btStart() {
   unlockAudio(); const cfg = { ...S.bt.cfg };
   S.bt = { phase: cfg.prep > 0 ? 'prep' : 'round', running: true, paused: false, round: cfg.prep > 0 ? 0 : 1, end: Date.now() + (cfg.prep > 0 ? cfg.prep : cfg.round) * 1000, left: 0, done: 0, cfg, warned: false, cd: 0 };
-  if (cfg.prep > 0) beep([660], 0.12); else bell(1);
+  if (cfg.prep > 0) sfx('tick'); else bell(1);
   wakeOn(); nativeBoxNotify(); commit();
 }
 function nativeBoxNotify() {
@@ -1286,7 +1307,7 @@ function btTick(now) {
   if (sound === 'start') { bell(1); buzz(350); say('Runde ' + b.round); }
   else if (sound === 'end') { bell(3); buzz([300, 120, 300, 120, 300]); say(b.phase === 'done' ? 'Geschafft' : 'Pause'); }
   else if (sound === 'warn') { clack(2); buzz(90); }
-  else if (sound === 'tick') beep([620], 0.08);
+  else if (sound === 'tick') sfx('tick');
   if (sound === 'start' || sound === 'end') nativeBoxNotify();
   if (b.phase === 'done') {
     b.running = false;
@@ -1302,8 +1323,8 @@ setInterval(() => {
   const now = Date.now(); let ch = false;
   if (S.rest) {
     const left = S.rest.end - now;
-    if (!S.rest.fired && pref('countdown') !== false && left > 0 && left <= 3000) { const sc = Math.ceil(left / 1000); if (sc !== S.rest.cd) { S.rest.cd = sc; beep([660], 0.07); } }
-    if (now >= S.rest.end && !S.rest.fired) { S.rest.fired = true; beep([880, 1175, 1568], 0.14, 0.16); buzz([220, 90, 220]); say(S.rest.kind === 'switch' ? S.rest.say : 'Pause vorbei. ' + S.rest.say); }
+    if (!S.rest.fired && pref('countdown') !== false && left > 0 && left <= 3000) { const sc = Math.ceil(left / 1000); if (sc !== S.rest.cd) { S.rest.cd = sc; sfx(sc === 1 ? 'last' : 'tick'); } }
+    if (now >= S.rest.end && !S.rest.fired) { S.rest.fired = true; sfx('end'); buzz([220, 90, 220]); say(S.rest.kind === 'switch' ? S.rest.say : 'Pause vorbei. ' + S.rest.say); }
     if (now >= S.rest.end + 5000) S.rest = null;
     ch = true;
   }
@@ -2193,7 +2214,7 @@ function trackPoint(lat, lng, acc, t) {
     const k = Math.floor(L.dist / 1000);
     if (k > Math.floor(before / 1000)) {
       const el = Math.round(trackElapsed(L)), lap = el - (L.splits.length ? L.splits[L.splits.length - 1] : 0);
-      L.splits.push(el); beep([880, 1175], 0.12, 0.15);
+      L.splits.push(el); sfx('km');
       say('Kilometer ' + k + '. ' + Math.floor(lap / 60) + ' Minuten ' + (lap % 60) + '.');
     }
   }
@@ -2920,11 +2941,13 @@ function Plan() {
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Einstellungen</h2>
       <div class="field" style="padding:6px 0"><span>Design</span><div class="seg">${[['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => html`<button class=${p.theme === k ? 'on' : ''} onClick=${() => { setPref('theme', k); applyTheme(); }}>${l}</button>`)}</div></div>
-      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Am Pausenende, auch im Stummmodus' : 'Am Pausenende. Im Stummmodus bleibt die Webseite oft still.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
+      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Am Pausenende, auch im Stummmodus' : 'Am Pausenende. Im Stummmodus bleibt die Webseite oft still.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); sfx('end'); } }} />
+      ${p.sound && html`<div class="field" style="padding:2px 0 8px"><span>Klang</span><div class="seg" role="group" aria-label="Klang">${Object.entries(SOUNDS).map(([k, x]) => { const on = (SOUNDS[p.soundSet] ? p.soundSet : 'marimba') === k; return html`<button class=${on ? 'on' : ''} aria-pressed=${on ? 'true' : 'false'} onClick=${() => { setPref('soundSet', k); unlockAudio(); sfx('end'); }}>${x.label}</button>`; })}</div>
+        <span class="tiny faint" style="font-weight:400">Antippen zum Anhören.</span></div>`}
       ${Cap() && html`<div class="row between" style="gap:10px;padding:2px 0"><span class="small muted">Mitteilung bei gesperrtem iPhone</span><button class="btn sm" onClick=${testNotify}>Testen</button></div>`}
       ${Cap() && html`<hr class="hr" /><div class="field" style="padding:6px 0"><span>Erinnerung vor dem Training</span><div class="seg" role="group" aria-label="Erinnerung vor dem Training">${[[0, 'Aus'], [15, '15 Min.'], [30, '30 Min.'], [60, '1 Std.']].map(([v, l]) => html`<button class=${(Number(p.remind) || 0) === v ? 'on' : ''} aria-pressed=${(Number(p.remind) || 0) === v ? 'true' : 'false'} onClick=${() => { setPref('remind', v); if (v) scheduleReminders(true); }}>${l}</button>`)}</div>
         <span class="tiny faint" style="font-weight:400">Für alle Trainings mit Uhrzeit im Wochenplan.</span></div>`}
-      <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Piept in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); beep([660], 0.07); } }} />
+      <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Piept in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); sfx('tick'); } }} />
       <hr class="hr" /><${Toggle} on=${!!p.voice} label="Sprachansage" hint="Sagt die nächste Übung an" onChange=${v => { setPref('voice', v); if (v) { _voiceReady = false; unlockAudio(); setTimeout(() => say('Pause vorbei. Butterfly, Satz 3'), 150); } }} />
       ${canVibrate && html`<hr class="hr" /><${Toggle} on=${p.vibrate} label="Vibration" hint="Am Pausenende" onChange=${v => setPref('vibrate', v)} />`}
       <hr class="hr" />
@@ -2979,7 +3002,7 @@ function Plan() {
         <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Trainings im Verlauf.</p>
       </div></details>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.6.1</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.6.2</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
