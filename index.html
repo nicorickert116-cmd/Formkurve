@@ -373,6 +373,66 @@ details.more summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--i
 details.more summary::-webkit-details-marker{display:none}
 details.more summary::after{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
 details.more[open] summary::after{transform:rotate(-135deg) translateY(-1px)}
+
+/* ---------- 1.6: Formkurve-Seite ---------- */
+.ink{color:var(--ink)}
+.fk-hero{padding:18px 16px 14px;overflow:hidden}
+.fk-title{font:800 40px/.92 var(--font-display);text-transform:uppercase;letter-spacing:.004em;margin:0;text-wrap:balance}
+.fk-sub{margin:7px 0 2px;font-size:14px;line-height:1.4;color:var(--ink-2);max-width:40ch}
+.fk-chart{margin:4px -4px 0}
+.fk-chart text.fk-axis{font:500 10.5px var(--font-data);fill:var(--ink-3)}
+.fk-chart text.fk-axis.strong{fill:var(--ink-2);font-weight:700}
+.fk-chart .fk-future{fill:var(--surface-2)}
+.fk-chart .fk-base{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.fk-chart .fk-today{stroke:var(--line);stroke-width:1}
+.fk-chart .fk-area{fill:var(--ink);fill-opacity:.05}
+.fk-chart .fk-line{fill:none;stroke:var(--ink);stroke-width:2.75;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:fkdraw 1.25s cubic-bezier(.3,.7,.2,1) .05s forwards}
+.fk-chart .fk-cone{fill:var(--ink);fill-opacity:.1;animation:fkfade .7s .95s both}
+.fk-chart .fk-mid{fill:none;stroke:var(--ink);stroke-width:2;stroke-dasharray:5 5;stroke-linecap:round;opacity:.7;animation:fkfade .7s .95s both}
+.fk-chart .fk-dot{fill:var(--ink);stroke:var(--surface);stroke-width:2.5}
+.fk-chart text.fk-now{font:800 18px var(--font-display);fill:var(--ink);letter-spacing:.01em}
+.fk-chart text.fk-end{font:700 12.5px var(--font-body);fill:var(--ink-2);animation:fkfade .7s 1.1s both}
+.fk-chart .fk-plan{fill:var(--surface);stroke-width:1.6}
+.fk-chart .fk-hair{stroke:var(--ink-3);stroke-width:1}
+@keyframes fkdraw{to{stroke-dashoffset:0}}
+@keyframes fkfade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fk-chart .fk-line{stroke-dasharray:none;stroke-dashoffset:0}}
+.fk-plan-key i{background:transparent!important;border:1.6px solid var(--ink-3);border-radius:50%!important;width:9px!important;height:9px!important}
+.fk-note{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:start;margin-top:12px}
+.fk-note p{margin:0;font-size:14.5px;line-height:1.42;color:var(--ink-2)}
+.fk-note b{color:var(--ink)}
+.fk-dash{height:0;border-top:2px dashed var(--ink);opacity:.7;margin-top:10px}
+.wk-card{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}
+.ring{display:block;flex:none}
+.ring circle{transition:stroke .3s}
+.ring-n{font:700 23px var(--font-data);fill:var(--ink);letter-spacing:-.04em}
+.ring-of{font-size:14px;fill:var(--ink-3)}
+.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 0}
+.cal-h span{text-align:center;font-size:11.5px;font-weight:600;color:var(--ink-3);padding-bottom:4px}
+.cal-d{display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px 0 4px;border-radius:10px;min-height:54px}
+.cal-d:active{background:var(--surface-2)}
+.cal-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 13.5px/1 var(--font-data);color:var(--ink);letter-spacing:-.03em}
+.cal-d.past .cal-n:not(.done){color:var(--ink-3)}
+.cal-n.done{color:var(--on-c);font-weight:700}
+.cal-n.plan{border:2px dashed var(--rc)}
+.cal-d.today .cal-n{outline:2px solid var(--ink);outline-offset:2px}
+.cal-t{font:600 10px/1 var(--font-data);color:var(--ink-2);height:10px;letter-spacing:-.04em}
+.grp{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--ink-2);margin:12px 0 2px}
+.prog-row{grid-template-columns:minmax(0,1fr) 76px auto;gap:12px}
+.prog-sub{display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-now{min-width:62px;text-align:right}
+.spark{display:block}
+.spark .sp-line{fill:none;stroke:var(--c);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark .sp-fc{fill:none;stroke:var(--c);stroke-width:1.6;stroke-dasharray:3 3;opacity:.85}
+.spark .sp-dot{fill:var(--c);stroke:var(--surface);stroke-width:1.5}
+.spark .sp-goal{fill:var(--surface);stroke:var(--c);stroke-width:1.5}
+.inp.time{width:auto;min-height:40px;height:40px;padding:0 10px;font:600 15px var(--font-data);background:var(--surface-2);border:1px solid var(--line)}
+.time-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 2px}
+.fk-chart .fk-goal{fill:var(--surface);stroke:var(--ink);stroke-width:2;animation:fkfade .7s 1.1s both}
+.hero-time{font-size:14px;color:var(--ink-2);margin-bottom:6px}
+.hero-time b{font:700 15px var(--font-data);letter-spacing:-.04em;color:var(--ink)}
+.banner.warn{border-style:solid;border-color:color-mix(in oklab,var(--warn) 55%,var(--surface));background:color-mix(in oklab,var(--warn) 12%,var(--surface))}
+.chip-time{font:600 11.5px var(--font-data);letter-spacing:-.04em;opacity:.85;margin-left:6px}
 </style>
 </head>
 <body>
@@ -637,16 +697,24 @@ function buildPlan(o) {
     const t = { id: uid('t_'), name: act, kind: 'lauf', color: pick('run'), focus: 'Ausdauer', run: { ...RUN_DEF, act } };
     templates.push(t); const f = [6, 5, 0, 2, 4].filter(i => !week[i].length); week[f.length ? f[0] : 6].push(t.id);
   }
-  return { v: 2, onboarded: true, templates, week, restV: 3, prefs: { sound: true, vibrate: true, bw: o.bw || 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, restMuscle: true, restStyle: 'normal', countdown: true, voice: false, carryW: true } };
+  return { v: 2, onboarded: true, templates, week, restV: 3, prefs: { sound: true, vibrate: true, bw: o.bw || 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, restMuscle: true, restStyle: 'normal', countdown: true, voice: false, carryW: true, remind: 30 }, times: {}, cal: { skip: {}, add: {} } };
 }
 function demoPlan() { return buildPlan({ preset: 'pp', legs: true, kampf: true, cardio: true, act: 'Laufen' }); }
 function normalizeSettings(s) {
   if (!s || !Array.isArray(s.templates)) return null;
   const o = clone(s);
   o.onboarded = true;
-  o.prefs = Object.assign({ sound: true, vibrate: true, bw: 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, restMuscle: true, restStyle: 'normal', countdown: true, voice: false, carryW: true }, o.prefs || {});
+  o.prefs = Object.assign({ sound: true, vibrate: true, bw: 75, bar: 20, theme: 'system', restAuto: true, restByReps: false, restSwitch: true, restMuscle: true, restStyle: 'normal', countdown: true, voice: false, carryW: true, remind: 30 }, o.prefs || {});
   if (!Array.isArray(o.week) || o.week.length !== 7) o.week = [[], [], [], [], [], [], []];
   o.week = o.week.map(a => (Array.isArray(a) ? a.filter(id => o.templates.some(t => t.id === id)) : []));
+  // Uhrzeiten im Wochenplan ("Tag|Einheit" → "HH:MM") und einzelne Termine (abgesagt / zusätzlich bzw. verschoben)
+  const ok = id => o.templates.some(t => t.id === id), isTime = v => /^\d{2}:\d{2}$/.test(v || ''), old = dkey(addDays(new Date(), -62));
+  o.times = o.times && typeof o.times === 'object' && !Array.isArray(o.times) ? o.times : {};
+  for (const k of Object.keys(o.times)) { const [d, id] = k.split('|'); if (!ok(id) || !isTime(o.times[k]) || !(o.week[+d] || []).includes(id)) delete o.times[k]; }
+  const cal = o.cal && typeof o.cal === 'object' ? o.cal : {};
+  o.cal = { skip: cal.skip && typeof cal.skip === 'object' ? cal.skip : {}, add: cal.add && typeof cal.add === 'object' ? cal.add : {} };
+  for (const k of Object.keys(o.cal.skip)) { o.cal.skip[k] = (Array.isArray(o.cal.skip[k]) ? o.cal.skip[k] : []).filter(ok); if (k < old || !o.cal.skip[k].length) delete o.cal.skip[k]; }
+  for (const k of Object.keys(o.cal.add)) { o.cal.add[k] = (Array.isArray(o.cal.add[k]) ? o.cal.add[k] : []).filter(x => x && ok(x.tpl)).map(x => ({ tpl: x.tpl, time: isTime(x.time) ? x.time : null })); if (k < old || !o.cal.add[k].length) delete o.cal.add[k]; }
   o.templates.forEach(t => {
     if (!COLORS.includes(t.color)) t.color = 'push';
     if (t.kind === 'kraft' && !Array.isArray(t.exercises)) t.exercises = [];
@@ -731,6 +799,41 @@ function sessHighlight(s) {
 }
 const sessMinutes = s => (s.end && s.start ? Math.max(1, Math.round((s.end - s.start) / 60000)) : null);
 
+/* ---------- Plan: was an welchem Tag ansteht, mit Uhrzeit ---------- */
+function planFor(k) {
+  const st = S.settings; if (!st) return [];
+  const i = wIdx(parseDkey(k)), cal = st.cal || { skip: {}, add: {} }, skip = cal.skip[k] || [];
+  const out = (st.week[i] || []).filter(id => !skip.includes(id)).map(id => ({ t: tpl(id), time: (st.times || {})[i + '|' + id] || null, once: false }));
+  for (const x of cal.add[k] || []) out.push({ t: tpl(x.tpl), time: x.time || null, once: true });
+  return out.filter(x => x.t).sort((a, b) => ((a.time || '99:99') < (b.time || '99:99') ? -1 : 1));
+}
+const doneOn = (k, id) => sortedSessions().some(s => s.date === k && s.tpl === id);
+const atMs = (k, time) => { const d = parseDkey(k); const [h, m] = String(time || '00:00').split(':').map(Number); d.setHours(h || 0, m || 0, 0, 0); return d.getTime(); };
+/* nächstes geplantes, noch offenes Training ab jetzt (14 Tage voraus) */
+function nextPlanned() {
+  const now = Date.now(), today = new Date();
+  for (let d = 0; d < 14; d++) {
+    const k = dkey(addDays(today, d));
+    for (const x of planFor(k)) { if (doneOn(k, x.t.id)) continue; if (d === 0 && x.time && atMs(k, x.time) < now - 90 * 60000) continue; return { k, ...x }; }
+  }
+  return null;
+}
+function setWeekTime(day, id, time) { const st = S.settings; st.times = st.times || {}; if (time) st.times[day + '|' + id] = time; else delete st.times[day + '|' + id]; saveSettings(); }
+/* Termin an einem Tag verschieben (toK + Uhrzeit), nur die Uhrzeit ändern (toK = k) oder absagen (toK = null) */
+function moveTraining(k, id, toK, time) {
+  const st = S.settings, cal = st.cal = st.cal || { skip: {}, add: {} };
+  const adds = cal.add[k] || [], ai = adds.findIndex(x => x.tpl === id);
+  if (ai >= 0) { adds.splice(ai, 1); if (!adds.length) delete cal.add[k]; }
+  else if ((st.week[wIdx(parseDkey(k))] || []).includes(id)) { cal.skip[k] = [...(cal.skip[k] || []).filter(x => x !== id), id]; }
+  if (toK) {
+    const j = wIdx(parseDkey(toK)), sk = cal.skip[toK] || [];
+    if ((st.week[j] || []).includes(id) && sk.includes(id) && ((st.times || {})[j + '|' + id] || null) === (time || null)) { cal.skip[toK] = sk.filter(x => x !== id); if (!cal.skip[toK].length) delete cal.skip[toK]; }
+    else cal.add[toK] = [...(cal.add[toK] || []), { tpl: id, time: time || null }];
+  }
+  saveSettings();
+}
+function addOnce(k, id, time) { const st = S.settings, cal = st.cal = st.cal || { skip: {}, add: {} }; cal.add[k] = [...(cal.add[k] || []), { tpl: id, time: time || null }]; saveSettings(); }
+
 /* ---------- storage: IndexedDB on the device, localStorage as fallback ---------- */
 const Store = {
   db: null, ls: false,
@@ -771,7 +874,7 @@ function onSaveErr(e) { toast(e && e.name === 'QuotaExceededError' ? 'Speicher v
 const DEB = {};
 function debounce(name, fn, ms) { if (DEB[name]) clearTimeout(DEB[name].t); DEB[name] = { fn, t: setTimeout(() => { DEB[name] = null; fn(); }, ms) }; }
 function flushSaves() { for (const k in DEB) { const d = DEB[k]; if (d) { clearTimeout(d.t); DEB[k] = null; d.fn(); } } }
-function saveSettings() { debounce('settings', () => Store.put('settings', S.settings), 400); syncActive(); commit(); }
+function saveSettings() { debounce('settings', () => Store.put('settings', S.settings), 400); syncActive(); planReminders(); commit(); }
 /* Empfehlung = Tabelle × Pausen-Stil (+30 s, wenn derselbe Muskel in dieser Einheit schon dran war) */
 function styledRest(v) { const f = (REST_STYLES[pref('restStyle')] || REST_STYLES.normal)[1]; return Math.max(45, Math.round(v * f / 15) * 15); }
 function muscleBefore(a, e) { const g = exGroup(e); if (!a || !a.ex || !g || g === 'Rumpf' || g === 'Ganzkörper') return false; const i = a.ex.indexOf(e); return i > 0 && a.ex.slice(0, i).some(x => exGroup(x) === g); }
@@ -781,7 +884,7 @@ function saveActive(now) { const fn = () => Store.put('active', S.active || null
 function saveMeta() { Store.put('meta', S.meta); }
 function persistSession(s) { Store.putSessions([s]); }
 function removeSession(id) { Store.delSession(id); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSaves(); else { if (S.active || S.bt.running) wakeOn(); commit(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { flushSaves(); autoBackup(); } else { if (S.active || S.bt.running) wakeOn(); commit(); } });
 window.addEventListener('pagehide', flushSaves);
 
 /* ---------- feedback: sound, vibration, wake lock, toast ---------- */
@@ -825,6 +928,70 @@ async function nativeNotify(id, at, title, body) {
     if (!(await nativeNotifyPerm())) return;
     await LN.schedule({ notifications: [{ id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } }] });
   } catch (e) {}
+}
+/* ---------- iPhone-App: Trainings-Erinnerungen, SideStore-Hinweis, Auto-Backup ---------- */
+const REMIND_IDS = Array.from({ length: 40 }, (_, i) => 200 + i), SIDE_IDS = [300, 301], SIDE_DAYS = 7;
+function planReminders() { if (Cap()) debounce('remind', () => scheduleReminders(false), 900); }
+async function notifyGranted(ask) {
+  const LN = nativePlugin('LocalNotifications'); if (!LN) return false;
+  if (ask) return nativeNotifyPerm();
+  if (_notifPerm === true) return true;
+  try { const p = await LN.checkPermissions(); if (p && p.display === 'granted') _notifPerm = true; return _notifPerm === true; } catch (e) { return false; }
+}
+let _remChain = Promise.resolve();
+/* nacheinander ausführen, damit sich zwei Planungen nie überschneiden */
+function scheduleReminders(ask) { _remChain = _remChain.then(() => scheduleRemindersNow(ask)).catch(() => {}); return _remChain; }
+async function scheduleRemindersNow(ask) {
+  const LN = nativePlugin('LocalNotifications'); if (!LN || !S.settings) return;
+  try { await LN.cancel({ notifications: [...REMIND_IDS, ...SIDE_IDS].map(id => ({ id })) }); } catch (e) {}
+  if (!(await notifyGranted(ask))) return;
+  const list = [], now = Date.now(), m = Number(pref('remind')) || 0, today = new Date();
+  if (m > 0) for (let d = 0; d < 14 && list.length < REMIND_IDS.length; d++) {
+    const k = dkey(addDays(today, d));
+    for (const x of planFor(k)) {
+      if (!x.time || doneOn(k, x.t.id)) continue;
+      const at = atMs(k, x.time) - m * 60000; if (at <= now + 5000 || list.length >= REMIND_IDS.length) continue;
+      list.push({ id: REMIND_IDS[list.length], title: x.t.name + ' um ' + x.time, body: m >= 60 ? 'In einer Stunde geht es los.' : 'In ' + m + ' Minuten geht es los.', schedule: { at: new Date(at), allowWhileIdle: true } });
+    }
+  }
+  const side = S.meta.sideAt;
+  if (side) {
+    const exp = side + SIDE_DAYS * 86400000, d6 = new Date(exp - 86400000); d6.setHours(19, 0, 0, 0);
+    const warn = [[SIDE_IDS[0], d6.getTime(), 'Formkurve morgen erneuern', 'Öffne SideStore und tippe auf „Refresh All“. Sonst startet die App ab morgen nicht mehr.'],
+      [SIDE_IDS[1], exp - 3 * 3600000, 'Formkurve läuft heute ab', 'Jetzt in SideStore erneuern, damit die App weiter startet. Deine Daten bleiben erhalten.']];
+    for (const [id, at, title, body] of warn) if (at > now + 5000) list.push({ id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } });
+  }
+  if (list.length) { try { await LN.schedule({ notifications: list }); } catch (e) {} }
+}
+const sideDaysLeft = () => (S.meta.sideAt ? Math.ceil((S.meta.sideAt + SIDE_DAYS * 86400000 - Date.now()) / 86400000) : null);
+function sideRefreshed() { S.meta.sideAt = Date.now(); saveMeta(); planReminders(); toast('Gespeichert. Die nächste Erinnerung kommt in 6 Tagen.'); commit(); }
+/* Backup als Datei-Inhalt */
+const backupJSON = () => JSON.stringify({ app: 'formkurve', v: 2, exported: new Date().toISOString(), settings: S.settings, sessions: sortedSessions() });
+const AB_DIR = 'Formkurve-Backups', AB_RX = /^formkurve-(\d{4}-\d{2}-\d{2})\.json$/;
+/* tägliches Auto-Backup in die Dateien-App (iPhone-App), die letzten 7 Tage bleiben liegen */
+async function autoBackup(force) {
+  const FS = nativePlugin('Filesystem'); if (!FS || !S.settings || !S.loaded) return;
+  if (!Object.keys(S.sessions).length) return;
+  if (!force && Date.now() - (S.meta.autoBackupAt || 0) < 20 * 3600000) return;
+  try {
+    await FS.writeFile({ path: AB_DIR + '/formkurve-' + dkey(new Date()) + '.json', data: backupJSON(), directory: 'DOCUMENTS', encoding: 'utf8', recursive: true });
+    S.meta.autoBackupAt = Date.now(); saveMeta(); commit();
+    const r = await FS.readdir({ path: AB_DIR, directory: 'DOCUMENTS' });
+    const files = ((r && r.files) || []).map(f => (typeof f === 'string' ? f : f.name)).filter(n => AB_RX.test(n)).sort();
+    for (const f of files.slice(0, Math.max(0, files.length - 7))) { try { await FS.deleteFile({ path: AB_DIR + '/' + f, directory: 'DOCUMENTS' }); } catch (e) {} }
+  } catch (e) {}
+}
+/* neuestes Auto-Backup finden (z. B. nach Neuinstallation) */
+async function findAutoBackup() {
+  const FS = nativePlugin('Filesystem'); if (!FS) return null;
+  try {
+    const r = await FS.readdir({ path: AB_DIR, directory: 'DOCUMENTS' });
+    const files = ((r && r.files) || []).map(f => (typeof f === 'string' ? f : f.name)).filter(n => AB_RX.test(n)).sort();
+    for (const f of files.reverse()) {
+      try { const x = await FS.readFile({ path: AB_DIR + '/' + f, directory: 'DOCUMENTS', encoding: 'utf8' }); const d = JSON.parse(x.data); if (d && d.app === 'formkurve' && Array.isArray(d.sessions)) return { date: f.match(AB_RX)[1], count: d.sessions.length, data: d }; } catch (e) {}
+    }
+  } catch (e) {}
+  return null;
 }
 function nativeRestNotify() { const r = S.rest; nativeNotify(101, r && !r.fired ? r.end : null, r && r.kind === 'switch' ? 'Wechselpause vorbei' : 'Pause vorbei', r ? (r.kind === 'switch' ? r.say : r.say || r.label) : ''); }
 function audio() { if (pref('sound') === false) return null; unlockAudio(); return AC; }
@@ -880,6 +1047,7 @@ async function boot() {
   if (Cap()) S.standalone = true; // in der iPhone-App gibt es nichts zu installieren
   S.loaded = true; applyTheme(); commit();
   if (S.active) { toast('Dein Training läuft weiter'); resumeTrackingAfterReload(); }
+  if (Cap() && S.settings) { if (!S.meta.sideAt) { S.meta.sideAt = Date.now(); saveMeta(); } planReminders(); setTimeout(() => autoBackup(), 5000); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     try {
       const had = !!navigator.serviceWorker.controller;
@@ -1053,6 +1221,7 @@ function finishSession() {
   if (S.bt.running) { S.bt.running = false; S.bt.phase = 'idle'; }
   saveActive(true); wakeOff();
   S.sheet = { type: 'summary', id: out.id, edited: !!a.editing, nextUp: nextUp.map(x => ({ name: x.e.name, from: x.s.prevW, to: x.s.w, bw: x.e.bw })), prs };
+  planReminders(); autoBackup(true);
   commit();
 }
 function discardActive() { trackUnwatch(); S.active = null; S.rest = null; nativeRestNotify(); S.showWorkout = false; S.sheet = null; if (S.bt.running) { S.bt.running = false; S.bt.phase = 'idle'; } saveActive(true); wakeOff(); commit(); }
@@ -1065,7 +1234,7 @@ function editSession(id) {
 }
 function deleteSession(id) {
   const s = S.sessions[id]; if (!s) return;
-  const ns = { ...S.sessions }; delete ns[id]; S.sessions = ns; removeSession(id); toast('Einheit gelöscht'); commit();
+  const ns = { ...S.sessions }; delete ns[id]; S.sessions = ns; removeSession(id); planReminders(); toast('Einheit gelöscht'); commit();
 }
 
 /* ---------- boxing round timer ---------- */
@@ -1194,6 +1363,7 @@ function exerciseProgress(src) {
     for (const e of s.ex || []) {
       const b = bestSetOf(e); if (!b.set) continue;
       const m = map[e.id] || (map[e.id] = { id: e.id, name: e.name, bw: !!e.bw, pts: [], prs: [] });
+      m.lo = e.lo || m.lo; m.hi = e.hi || m.hi; m.inc = e.inc || m.inc;
       const prevBest = m.pts.reduce((x, p) => Math.max(x, p.y), 0);
       const p = { date: s.date, y: round2(b.v), set: b.set, bw: !!e.bw };
       if (m.pts.length && p.y > prevBest + 0.01) m.prs.push(p.date);
@@ -1251,6 +1421,59 @@ function compareSession(s, src) {
   return [];
 }
 
+/* ---------- Formkurve: Gesamtkraft und Prognose ---------- */
+/* Gesamtkraft als Kettenindex (erstes Krafttraining = 100). Jede Einheit verschiebt den Index um die mittlere
+   Veränderung ihrer Übungen gegenüber dem letzten Mal, gewichtet über alle aktiven Übungen. Neue Übungen
+   erzeugen so keine Sprünge, und Push/Pull-Tage zählen nicht doppelt. */
+function strengthIndex(src) {
+  const sess = sortedSessions(src).slice().reverse().filter(s => s.kind === 'kraft');
+  const last = {}, seen = {}, pts = []; let idx = 100;
+  for (const s of sess) {
+    const t = parseDkey(s.date).getTime(), vals = [];
+    for (const e of s.ex || []) { const b = bestSetOf(e); if (b.set && b.v > 0) vals.push([e.id, b.v]); }
+    if (!vals.length) continue;
+    vals.forEach(([id]) => { seen[id] = t; });
+    const active = Object.keys(seen).filter(id => t - seen[id] <= 42 * 86400000).length;
+    let sum = 0;
+    for (const [id, v] of vals) if (last[id]) sum += Math.log(Math.min(1.3, Math.max(0.7, v / last[id])));
+    idx *= Math.exp(sum / Math.max(1, active));
+    vals.forEach(([id, v]) => { last[id] = v; });
+    const p = pts[pts.length - 1];
+    if (p && p.date === s.date) { p.y = idx; p.n++; } else pts.push({ date: s.date, y: idx, n: 1 });
+  }
+  return pts;
+}
+const FC_WEEKS = 8, FC_TAU = 14;
+/* Trend der letzten 8 Wochen → Prognose, die mit der Zeit abflacht (Fortschritt wird langsamer), mit Bereich */
+function forecastFrom(pts, minPts = 4, minSpan = 14, cap = 0.025) {
+  if (!pts || !pts.length) return { ok: false, need: minPts, readyAt: null };
+  const lastK = pts[pts.length - 1].date, win = pts.filter(p => p.date >= dkey(addDays(parseDkey(lastK), -56)));
+  const day = k => (parseDkey(k) - parseDkey(win[0].date)) / 86400000, span = day(lastK);
+  if (win.length < minPts || span < minSpan) {
+    const ready = addDays(parseDkey(win[0].date), Math.max(minSpan, 21));
+    return { ok: false, need: Math.max(0, minPts - win.length), readyAt: dkey(ready) > dkey(new Date()) ? dkey(ready) : null };
+  }
+  const n = win.length, xs = win.map(p => day(p.date)), ys = win.map(p => p.y);
+  const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0; for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; }
+  const b = sxx ? sxy / sxx : 0, a = my - b * mx;
+  const sd = n > 2 ? Math.sqrt(ys.reduce((s, y, i) => s + (y - (a + b * xs[i])) ** 2, 0) / (n - 2)) : 0;
+  const y0 = ys[n - 1], r = Math.min(cap, Math.max(0, (7 * b) / y0));
+  const grow = (w, rr) => y0 * (1 + rr * FC_TAU * (1 - Math.exp(-w / FC_TAU)));
+  const at = w => { const s = sd * 0.6 * Math.sqrt(w / FC_WEEKS); return { y: grow(w, r), lo: Math.max(y0 * 0.97, grow(w, r * 0.5) - s), hi: grow(w, Math.min(cap + 0.01, r * 1.5 + 0.003)) + s }; };
+  return { ok: true, r, y0, lastK, endK: dkey(addDays(parseDkey(lastK), FC_WEEKS * 7)), at };
+}
+/* Ziel pro Übung in 8 Wochen als Satz (Gewicht × Wiederholungen) */
+function exerciseGoal(x) {
+  const fc = forecastFrom(x.pts, 3, 14, 0.03); if (!fc.ok || !(fc.r > 0)) return { fc, set: null };
+  const P = fc.at(FC_WEEKS).y, cur = x.last.set, bwKg = x.bw ? Number(pref('bw')) || 0 : 0;
+  const lo = x.lo || 8, hi = Math.max(x.hi || 12, lo), inc = x.inc || 2.5, w0 = cur.w || 0;
+  const w = Math.floor((P / (1 + lo / 30) - bwKg) / inc + 1e-9) * inc;
+  if (w > w0) return { fc, set: { w: round2(w), r: lo } };
+  const reps = Math.min(hi, Math.floor(30 * (P / Math.max(1, w0 + bwKg) - 1)));
+  return { fc, set: reps > (cur.r || 0) ? { w: w0, r: reps } : null };
+}
+
 /* ---------- example data (only shown, never saved) ---------- */
 function makeDemo() {
   const st = demoPlan(), out = {}, today = new Date(), start = addDays(mondayOf(today), -7 * 9);
@@ -1296,7 +1519,7 @@ async function shareText(text, title) {
   catch (e) { S.sheet = { type: 'text', title, text }; commit(); }
 }
 async function exportJSON() {
-  const data = JSON.stringify({ app: 'formkurve', v: 2, exported: new Date().toISOString(), settings: S.settings, sessions: sortedSessions() });
+  const data = backupJSON();
   const name = 'formkurve-backup-' + dkey(new Date()) + '.json';
   const done = msg => { S.meta.lastBackup = Date.now(); saveMeta(); toast(msg); };
   const FS = nativePlugin('Filesystem'), SH = nativePlugin('Share');
@@ -1314,18 +1537,21 @@ async function exportJSON() {
     setTimeout(() => URL.revokeObjectURL(url), 5000); done('Backup heruntergeladen');
   } catch (e) { S.sheet = { type: 'text', title: 'Backup (JSON)', text: data }; commit(); }
 }
+/* Backup-Inhalt übernehmen: Einheiten werden ergänzt (gleiche ID = überschrieben), Plan und Einstellungen aus dem Backup */
+function restoreData(d) {
+  if (!d || d.app !== 'formkurve' || !Array.isArray(d.sessions)) throw new Error('format');
+  const ns = { ...S.sessions }, list = [];
+  for (const s of d.sessions) if (s && s.id && s.date && s.kind) { ns[s.id] = s; list.push(s); }
+  S.sessions = ns; Store.putSessions(list);
+  if (d.settings) { const st = normalizeSettings(d.settings); if (st) { S.settings = st; applyTheme(); Store.put('settings', S.settings); } }
+  planReminders();
+  return list.length;
+}
 function importJSON(file) {
   const fr = new FileReader();
   fr.onload = () => {
-    try {
-      const d = JSON.parse(fr.result);
-      if (!d || d.app !== 'formkurve' || !Array.isArray(d.sessions)) throw new Error('format');
-      const ns = { ...S.sessions }, list = [];
-      for (const s of d.sessions) if (s && s.id && s.date && s.kind) { ns[s.id] = s; list.push(s); }
-      S.sessions = ns; Store.putSessions(list);
-      if (d.settings) { const st = normalizeSettings(d.settings); if (st) { S.settings = st; applyTheme(); Store.put('settings', S.settings); } }
-      toast(list.length + ' Einheiten importiert');
-    } catch (e) { toast('Datei nicht erkannt. Wähle ein Formkurve-Backup (.json).'); }
+    try { const n = restoreData(JSON.parse(fr.result)); toast(n + ' Einheiten importiert'); }
+    catch (e) { toast('Datei nicht erkannt. Wähle ein Formkurve-Backup (.json).'); }
     commit();
   };
   fr.readAsText(file);
@@ -1336,7 +1562,8 @@ async function resetAll() {
   applyTheme(); commit();
 }
 function finishOnboarding(settings) {
-  S.settings = settings; S.tab = 'heute'; Store.put('settings', S.settings); applyTheme(); askPersist(); commit();
+  S.settings = settings; S.tab = 'heute'; Store.put('settings', S.settings); applyTheme(); askPersist();
+  if (Cap() && !S.meta.sideAt) { S.meta.sideAt = Date.now(); saveMeta(); } planReminders(); commit();
 }
 
 
@@ -1442,6 +1669,7 @@ function SheetHost() {
   if (sh.type === 'install') return html`<${InstallSheet} onClose=${close} />`;
   if (sh.type === 'logPick') return html`<${LogPickSheet} sh=${sh} onClose=${close} />`;
   if (sh.type === 'order') return html`<${OrderSheet} onClose=${close} />`;
+  if (sh.type === 'day') return html`<${DaySheet} sh=${sh} onClose=${close} />`;
   if (sh.type === 'text') return html`<${Sheet} onClose=${close} label=${sh.title}>
     <h2 class="h2">${sh.title}</h2><p class="small muted" style="margin:0">Tippe ins Feld, markiere alles und kopiere den Text.</p>
     <textarea id="text-export" class="inp" style="min-height:260px;font:12px/1.5 var(--font-data)" readonly value=${sh.text}
@@ -1458,10 +1686,11 @@ function Today() {
   const list = sortedSessions();
   const weekKeys = Array.from({ length: 7 }, (_, i) => dkey(addDays(mon, i)));
   const doneBy = {}; list.forEach(s => { if (s.date >= weekKeys[0] && s.date <= weekKeys[6]) (doneBy[s.date] = doneBy[s.date] || []).push(s); });
-  const plannedAll = (S.settings.week[sel] || []).map(tpl).filter(Boolean);
+  const planSel = planFor(selKey), plannedAll = planSel.map(x => x.t);
   const doneSel = doneBy[selKey] || [];
-  const planned = plannedAll.filter(t => !doneSel.some(s => s.tpl === t.id));
-  const plannedWeek = S.settings.week.reduce((n, a) => n + a.filter(id => tpl(id)).length, 0);
+  const planned = planSel.filter(x => !doneSel.some(s => s.tpl === x.t.id));
+  const plannedWeek = weekKeys.reduce((n, k) => n + planFor(k).length, 0);
+  const sideLeft = Cap() ? sideDaysLeft() : null;
   const doneWeek = weekKeys.reduce((n, k) => n + (doneBy[k] || []).length, 0);
   const ready = [];
   S.settings.templates.filter(t => t.kind === 'kraft').forEach(t => t.exercises.forEach(c => {
@@ -1473,10 +1702,11 @@ function Today() {
   return html`<div class="stack" style="gap:0">
     <div class="eyebrow" style="margin:4px 0 10px">${dateLong(today)} · KW ${isoWeek(today)}</div>
     ${S.updateReady && html`<div class="banner" style="margin-bottom:12px"><span>Neue Version von Formkurve ist da.</span><button class="btn sm primary" onClick=${() => { flushSaves(); location.reload(); }}>Neu laden</button></div>`}
-    ${backupDue() && html`<div class="banner" style="margin-bottom:12px"><span>Zeit für ein Backup: Deine Daten liegen nur auf diesem Gerät.</span><button class="btn sm primary" onClick=${exportJSON}>Sichern</button></div>`}
+    ${sideLeft != null && sideLeft <= 1 && html`<div class="banner warn" style="margin-bottom:12px"><span><b>Formkurve läuft ${sideLeft <= 0 ? 'heute' : 'morgen'} ab.</b> Öffne SideStore und tippe auf „Refresh All“.</span><button class="btn sm primary" onClick=${sideRefreshed}>Erledigt</button></div>`}
+    ${!Cap() && backupDue() && html`<div class="banner" style="margin-bottom:12px"><span>Zeit für ein Backup: Deine Daten liegen nur auf diesem Gerät.</span><button class="btn sm primary" onClick=${exportJSON}>Sichern</button></div>`}
     <div class="week" role="tablist" aria-label="Diese Woche">
       ${weekKeys.map((k, i) => {
-        const d = addDays(mon, i), done = doneBy[k] || [], plan = (S.settings.week[i] || []).map(tpl).filter(Boolean);
+        const d = addDays(mon, i), done = doneBy[k] || [], plan = planFor(k).map(x => x.t);
         return html`<button role="tab" aria-selected=${i === sel} class=${'day' + (k === tk ? ' today' : '') + (i === sel ? ' sel' : '')} onClick=${() => setSel(i)}>
           <small>${DAY_S[i]}</small><b>${d.getDate()}</b>
           <span class="dots">${done.length ? done.map(s => html`<i class=${'dot t-' + s.color}></i>`) : plan.map(t => html`<i class=${'dot plan t-' + t.color}></i>`)}</span></button>`;
@@ -1491,8 +1721,8 @@ function Today() {
           <div class="h2">${s.name}</div>
           <div class="meta"><span><b>${sessMetric(s).main}</b></span><span>${sessMetric(s).sub}</span>${sessMinutes(s) ? html`<span><b>${sessMinutes(s)}</b> min</span>` : null}</div>
         </div></div></button>`)}
-      ${planned.length ? planned.map(t => html`<div class=${'card plan-hero t-' + t.color}>
-          <div class="plan-row"><span class="disc lg"></span><div class="grow"><h1 class="h1">${t.name}</h1><div class="small muted" style="margin-top:6px">${t.focus}</div></div></div>
+      ${planned.length ? planned.map(({ t, time }) => html`<div class=${'card plan-hero t-' + t.color}>
+          <div class="plan-row"><span class="disc lg"></span><div class="grow">${time && html`<div class="hero-time">${isToday ? 'Heute' : DAY_L[sel]} um <b>${time}</b> Uhr</div>`}<h1 class="h1">${t.name}</h1><div class="small muted" style="margin-top:6px">${t.focus}</div></div></div>
           <div class="meta"><${PlanMeta} t=${t} /></div>
           ${isPast ? html`<button class="btn c block" onClick=${() => startSession(t.id, selKey, 'log')}>${t.name} nachtragen</button>`
             : isToday ? html`<div class="row" style="gap:8px"><button class="btn c grow" onClick=${() => startSession(t.id, tk)}>${t.name} starten</button><button class="btn" onClick=${() => startSession(t.id, tk, 'log')}>Nachtragen</button></div>`
@@ -1507,7 +1737,7 @@ function Today() {
     <section class="sec" aria-label="Woche">
       <div class="eyebrow"><span>Diese Woche</span><span class="data" style="letter-spacing:0">${doneWeek} / ${plannedWeek}</span></div>
       <div class="card stack" style="gap:12px">
-        <div class="segbar" aria-hidden="true">${(() => { const cells = []; weekKeys.forEach((k, i) => { const d = doneBy[k] || [], p = (S.settings.week[i] || []).map(tpl).filter(Boolean); const n = Math.max(d.length, p.length); for (let j = 0; j < n; j++) { const s = d[j]; cells.push(html`<i class=${s ? 'on t-' + s.color : ''}></i>`); } }); return cells; })()}</div>
+        <div class="segbar" aria-hidden="true">${(() => { const cells = []; weekKeys.forEach((k, i) => { const d = doneBy[k] || [], p = planFor(k); const n = Math.max(d.length, p.length); for (let j = 0; j < n; j++) { const s = d[j]; cells.push(html`<i class=${s ? 'on t-' + s.color : ''}></i>`); } }); return cells; })()}</div>
         <div class="small" style="margin:0">${plannedWeek && doneWeek >= plannedWeek ? html`<b class="good">Wochenziel geschafft.</b> Stark!` : plannedWeek ? html`Noch <b>${plannedWeek - doneWeek}</b> ${plannedWeek - doneWeek === 1 ? 'Training' : 'Trainings'} diese Woche geplant.` : html`<b>${doneWeek}</b> ${doneWeek === 1 ? 'Training' : 'Trainings'} diese Woche.`}</div>
       </div>
     </section>
@@ -2242,6 +2472,114 @@ function LineChart({ pts, color, fmt = fmt1, unit = '', h = 190, label, setLabel
 }
 function Legend({ keys }) { return html`<div class="legend">${keys.map(k => html`<span class=${'t-' + k}><i></i>${colorName(k)}</span>`)}</div>`; }
 
+/* ---------- Formkurve: Gesamtkraft bisher (durchgezogen), Prognose (gestrichelt mit Bereich), Trainingsspur darunter ---------- */
+const PAST_SHARE = 0.64; // Zeitachse in zwei Teilen: Vergangenheit bis „heute“, danach die 8 Wochen Prognose
+function FormChart({ pts, fc, from, rug, h = 206, label }) {
+  const [ref, w] = useWidth(); const [hi, setHi] = useState(null);
+  const now = new Date(), today = dkey(now), DAY = 86400000;
+  let vis = pts.filter(p => p.date >= from);
+  const before = pts.filter(p => p.date < from);
+  if (before.length) vis = [{ date: from, y: before[before.length - 1].y, edge: true }, ...vis];
+  const first = vis.length ? vis[0].date : today;
+  const x0K = dkey(new Date(Math.min(parseDkey(dkey(addDays(now, -14))).getTime(), Math.max(parseDkey(from).getTime(), addDays(parseDkey(first), -3).getTime()))));
+  const endK = fc && fc.ok ? fc.endK : dkey(addDays(now, FC_WEEKS * 7));
+  const t0 = parseDkey(x0K).getTime(), tT = parseDkey(today).getTime(), t1 = Math.max(parseDkey(endK).getTime(), tT + 7 * DAY);
+  const L = 2, R = 2, T = 24, B = 46, pw = w - L - R, ph = h - T - B, xMid = L + pw * PAST_SHARE;
+  const X = k => { const t = typeof k === 'number' ? k : parseDkey(k).getTime(); return t <= tT ? L + ((t - t0) / Math.max(DAY, tT - t0)) * pw * PAST_SHARE : xMid + ((t - tT) / Math.max(DAY, t1 - tT)) * pw * (1 - PAST_SHARE); };
+  const fcs = fc && fc.ok ? Array.from({ length: 17 }, (_, i) => { const wk = i / 2, v = fc.at(wk); return { t: parseDkey(fc.lastK).getTime() + wk * 7 * DAY, ...v }; }) : [];
+  const ys = [...vis.map(p => p.y), ...fcs.flatMap(p => [p.lo, p.hi]), 100];
+  let mn = Math.min(...ys), mx = Math.max(...ys); const pad = Math.max(1.6, (mx - mn) * 0.14); mn -= pad; mx += pad;
+  const Y = v => T + ph - ((v - mn) / (mx - mn)) * ph;
+  const P = vis.map(p => [X(p.date), Y(p.y)]), last = P[P.length - 1], lp = vis[vis.length - 1];
+  const line = P.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join('');
+  let len = 0; for (let i = 1; i < P.length; i++) len += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+  const area = P.length > 2 ? line + `L${last[0].toFixed(1)},${T + ph}L${P[0][0].toFixed(1)},${T + ph}Z` : '';
+  const cone = fcs.length ? 'M' + fcs.map(p => X(p.t).toFixed(1) + ',' + Y(p.hi).toFixed(1)).join('L') + 'L' + fcs.slice().reverse().map(p => X(p.t).toFixed(1) + ',' + Y(p.lo).toFixed(1)).join('L') + 'Z' : '';
+  const mid = fcs.length ? 'M' + fcs.map(p => X(p.t).toFixed(1) + ',' + Y(p.y).toFixed(1)).join('L') : '';
+  const fe = fcs[fcs.length - 1];
+  const pct = v => (v >= 100 ? '+' : '−') + fmt1(Math.abs(v - 100)) + ' %';
+  const fd = k => { const d = parseDkey(k); return d.getDate() + '.' + (d.getMonth() + 1) + '.'; };
+  const rugY = T + ph + 8, byDay = {}, tw = Math.max(2, Math.min(6, (pw * PAST_SHARE) / Math.max(1, (tT - t0) / DAY) - 1));
+  (rug || []).forEach(s => { if (s.date >= x0K && s.date <= today) (byDay[s.date] = byDay[s.date] || []).push(s); });
+  const real = vis.filter(p => !p.edge);
+  const pick = ev => { const r = ref.current.getBoundingClientRect(), px = ev.clientX - r.left; let b = null, bd = 28; real.forEach((p, i) => { const d = Math.abs(X(p.date) - px); if (d < bd) { bd = d; b = i; } }); setHi(b); };
+  const hp = hi != null ? real[hi] : null;
+  return html`<div class="chart fk-chart" ref=${ref} onPointerLeave=${() => setHi(null)}>
+    <svg width=${w} height=${h} viewBox=${`0 0 ${w} ${h}`} role="img" aria-label=${label} tabindex="0"
+      onPointerMove=${pick} onPointerDown=${pick} onBlur=${() => setHi(null)}
+      onKeyDown=${e => { if (e.key === 'ArrowRight') setHi(Math.min(real.length - 1, (hi == null ? -1 : hi) + 1)); if (e.key === 'ArrowLeft') setHi(Math.max(0, (hi == null ? real.length : hi) - 1)); }}>
+      <rect class="fk-future" x=${xMid} y=${T - 22} width=${w - R - xMid} height=${ph + 22} rx="10"/>
+      <line class="fk-base" x1=${L} x2=${w - R} y1=${Y(100)} y2=${Y(100)}/>
+      <text class="fk-axis" x=${L + 2} y=${Y(100) + 14}>Start</text>
+      <line class="fk-today" x1=${xMid} x2=${xMid} y1=${T - 22} y2=${T + ph}/>
+      ${cone && html`<path class="fk-cone" d=${cone}/>`}
+      ${mid && html`<path class="fk-mid" d=${mid}/>`}
+      ${area && html`<path class="fk-area" d=${area}/>`}
+      ${P.length > 1 && html`<path class="fk-line" d=${line} style=${'--len:' + Math.ceil(len + 2)}/>`}
+      ${!fcs.length && last && html`<line class="fk-mid" x1=${last[0]} x2=${w - R - 6} y1=${last[1]} y2=${last[1]}/>`}
+      ${fe && html`<circle cx=${X(fcs[fcs.length - 1].t)} cy=${Y(fe.y)} r="4" class="fk-goal"/>`}
+      ${last && html`<circle cx=${last[0]} cy=${last[1]} r="5.5" class="fk-dot"/>`}
+      ${Object.entries(byDay).map(([k, ss]) => ss.slice(0, 2).map((s, i) => html`<rect x=${X(k) - tw / 2} y=${rugY + i * 7} width=${tw} height="5" rx="1.5" style=${'fill:var(--' + s.color + ')'}/>`))}
+      <text class="fk-axis" x=${L} y=${h - 6}>${fd(x0K)}</text>
+      <text class="fk-axis strong" x=${xMid} y=${h - 6} text-anchor="middle">heute</text>
+      <text class="fk-axis" x=${w - R} y=${h - 6} text-anchor="end">${fd(endK)}</text>
+      ${hp && html`<line x1=${X(hp.date)} x2=${X(hp.date)} y1=${T - 22} y2=${T + ph} class="fk-hair"/><circle cx=${X(hp.date)} cy=${Y(hp.y)} r="5" class="fk-dot"/>`}
+    </svg>
+    ${hp && html`<div class="tip" style=${`left:${Math.min(Math.max(X(hp.date), 80), w - 80)}px;top:${Math.max(0, Y(hp.y) - 70)}px`}>
+      <div class="tiny" style="opacity:.75">${dateShort(hp.date)}</div><div><b>${pct(hp.y)}</b> seit Start</div>
+      ${(byDay[hp.date] || []).map(s => html`<div class="tiny">${s.name}</div>`)}</div>`}
+  </div>`;
+}
+/* Mini-Kurve pro Übung: letzte Trainings, gestrichelt weiter bis zum Ziel in 8 Wochen */
+function Spark({ pts, fc, w = 76, h = 30 }) {
+  const ps = pts.slice(-8); if (!ps.length) return html`<span></span>`;
+  const fy = fc && fc.ok && fc.r > 0 ? fc.at(FC_WEEKS).y : null;
+  const vals = ps.map(p => p.y).concat(fy != null ? [fy] : []);
+  const mn = Math.min(...vals), mx = Math.max(...vals), span = mx - mn || 1, n = ps.length, pastW = fy != null ? w * 0.7 : w - 6;
+  const X = i => 3 + (n === 1 ? pastW / 2 : (i / (n - 1)) * (pastW - 3)), Y = v => h - 4 - ((v - mn) / span) * (h - 8);
+  const line = ps.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(p.y).toFixed(1)).join('');
+  const lx = X(n - 1), ly = Y(ps[n - 1].y);
+  return html`<svg class="spark" width=${w} height=${h} viewBox=${`0 0 ${w} ${h}`} aria-hidden="true">
+    ${n > 1 && html`<path d=${line} class="sp-line"/>`}
+    ${fy != null && html`<path d=${`M${lx.toFixed(1)},${ly.toFixed(1)}L${w - 3},${Y(fy).toFixed(1)}`} class="sp-fc"/><circle cx=${w - 3} cy=${Y(fy)} r="2.2" class="sp-goal"/>`}
+    <circle cx=${lx} cy=${ly} r="2.8" class="sp-dot"/></svg>`;
+}
+/* Wochenring: ein Segment pro geplantem Training, erledigte in ihrer Farbe */
+function WeekRing({ done, planned, size = 84 }) {
+  const N = Math.max(planned, done.length, 1), r = size / 2 - 7, c = 2 * Math.PI * r, gap = N > 1 ? 6 : 0, seg = c / N - gap;
+  return html`<svg class="ring" width=${size} height=${size} viewBox=${`0 0 ${size} ${size}`} role="img" aria-label=${done.length + ' von ' + planned + ' Trainings geschafft'}>
+    <g transform=${`rotate(-90 ${size / 2} ${size / 2})`}>${Array.from({ length: N }, (_, i) => html`<circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke-width="9" stroke-linecap="round"
+      style=${'stroke:' + (i < done.length ? 'var(--' + done[i] + ')' : 'var(--line)')} stroke-dasharray=${`${Math.max(0.01, seg - 9 + (N > 1 ? 0 : 9))} ${c}`} stroke-dashoffset=${-(i * c) / N - (N > 1 ? 4.5 : 0)}/>`)}</g>
+    <text x="50%" y="50%" dy="0.36em" text-anchor="middle" class="ring-n">${done.length}<tspan class="ring-of">/${planned}</tspan></text></svg>`;
+}
+/* Monatskalender: erledigt = gefüllter Kreis in der Farbe der Einheit, geplant = gestrichelter Kreis mit Uhrzeit */
+function MonthCal({ onPick }) {
+  const [off, setOff] = useState(0);
+  const now = new Date(), today = dkey(now), m0 = new Date(now.getFullYear(), now.getMonth() + off, 1);
+  const lead = wIdx(m0), days = new Date(m0.getFullYear(), m0.getMonth() + 1, 0).getDate();
+  const byDay = {}; sortedSessions().forEach(s => { if (s.date.slice(0, 7) === dkey(m0).slice(0, 7)) (byDay[s.date] = byDay[s.date] || []).push(s); });
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push(html`<span></span>`);
+  for (let d = 1; d <= days; d++) {
+    const k = dkey(new Date(m0.getFullYear(), m0.getMonth(), d)), ss = byDay[k] || [];
+    const open = k >= today ? planFor(k).filter(x => !ss.some(s => s.tpl === x.t.id)) : [];
+    const fill = ss.length === 1 ? `var(--${ss[0].color})` : ss.length > 1 ? `conic-gradient(var(--${ss[0].color}) 0 50%, var(--${ss[1].color}) 0 100%)` : null;
+    const ring = !ss.length && open.length ? `var(--${open[0].t.color})` : null;
+    const lab = [ss.map(s => s.name + ' erledigt').join(', '), open.map(x => x.t.name + (x.time ? ' um ' + x.time : '') + ' geplant').join(', ')].filter(Boolean).join('; ');
+    cells.push(html`<button class=${'cal-d' + (k === today ? ' today' : '') + (k < today ? ' past' : '')} onClick=${() => onPick(k)} aria-label=${dateLong(parseDkey(k)) + (lab ? ': ' + lab : '')}>
+      <span class=${'cal-n' + (fill ? ' done t-' + ss[0].color : '') + (ring ? ' plan' : '')} style=${fill ? 'background:' + fill : ring ? '--rc:' + ring : ''}>${d}</span>
+      <span class="cal-t">${ss.length > 1 ? '' : !ss.length && open[0] && open[0].time ? open[0].time : ''}</span></button>`);
+  }
+  return html`<div class="cal">
+    <div class="row between" style="margin-bottom:8px"><h2 class="h3">${MON_L[m0.getMonth()]} ${m0.getFullYear()}</h2>
+      <div class="row" style="gap:2px"><button class="iconbtn" aria-label="Vorheriger Monat" onClick=${() => setOff(off - 1)}><span style="display:inline-grid;transform:rotate(90deg)">${I.down}</span></button>
+        ${off !== 0 && html`<button class="btn sm ghost" onClick=${() => setOff(0)}>Heute</button>`}
+        <button class="iconbtn" aria-label="Nächster Monat" onClick=${() => setOff(off + 1)}><span style="display:inline-grid;transform:rotate(-90deg)">${I.down}</span></button></div></div>
+    <div class="cal-g cal-h" aria-hidden="true">${DAY_S.map(x => html`<span>${x}</span>`)}</div>
+    <div class="cal-g">${cells}</div>
+  </div>`;
+}
+
 
 /* ---------- first start: plan setup ---------- */
 function Opt({ on, title, desc, onClick, color }) {
@@ -2254,6 +2592,8 @@ function Onboarding() {
   const [o, setO] = useState({ kraft: true, kampf: false, cardio: false, act: 'Laufen', preset: 'pp', legs: true, bw: 75 });
   const [draft, setDraft] = useState(null);
   const fileRef = useRef(null);
+  const [found, setFound] = useState(null);
+  useEffect(() => { if (Cap()) findAutoBackup().then(f => { if (f) setFound(f); }); }, []);
   const set = (k, v) => setO({ ...o, [k]: v });
   const steps = o.kraft ? ['typ', 'vorlage', 'woche'] : ['typ', 'woche'];
   const cur = step === 0 ? 'start' : steps[step - 1];
@@ -2270,7 +2610,10 @@ function Onboarding() {
       <p class="muted" style="margin:0;font-size:17px;max-width:36ch">Stell deinen Plan einmal ein, dann sagt dir Formkurve bei jeder Übung, was heute dran ist.</p>
       <ul class="steps-ol muted small" style="list-style:none;padding:0">
         <li>Gewicht und Wiederholungen mit Double Progression</li><li>Pausentimer, Rundentimer und Scheibenrechner</li><li>Verlauf, Rekorde und Kraftkurven. Alles offline, nur auf deinem Gerät.</li></ul>
-      <button class="btn primary block" onClick=${() => setStep(1)}>Plan einrichten</button>
+      ${found && html`<div class="card tint t-run stack" style="gap:8px"><b class="h3">Gespeichertes Backup gefunden</b>
+        <span class="small muted">Vom ${dateShort(found.date).slice(4)} mit ${found.count} ${found.count === 1 ? 'Training' : 'Trainings'} und deinem Plan.</span>
+        <button class="btn c block" onClick=${() => { try { const n = restoreData(found.data); toast(n + ' Trainings wiederhergestellt'); } catch (e) { toast('Backup ließ sich nicht laden'); } commit(); }}>Wiederherstellen</button></div>`}
+      <button class=${'btn block ' + (found ? '' : 'primary')} onClick=${() => setStep(1)}>${found ? 'Neu einrichten' : 'Plan einrichten'}</button>
       <button class="btn ghost block" onClick=${() => fileRef.current && fileRef.current.click()}>Backup laden</button>
       <input id="ob-import" ref=${fileRef} type="file" accept=".json,application/json" hidden onChange=${e => { const f = e.target.files && e.target.files[0]; if (f) importJSON(f); e.target.value = ''; }} />
     </div>`}
@@ -2382,94 +2725,152 @@ function LogPickSheet({ sh, onClose }) {
 /* kleines ⓘ: ein Satz Erklärung zum Aufklappen */
 function Info({ text }) { return html`<details class="info"><summary aria-label="Erklärung">i</summary><p>${text}</p></details>`; }
 const TREND = { up: ['▲', 'besser', 'up'], eq: ['●', 'gleich', 'eq'], down: ['▼', 'weniger', 'down'], neu: ['○', 'neu', 'eq'] };
+/* Wochentag in Worten relativ zu heute */
+function whenWord(k, time) {
+  const d = Math.round((parseDkey(k) - parseDkey(dkey(new Date()))) / 86400000);
+  const day = d === 0 ? 'heute' : d === 1 ? 'morgen' : d < 7 ? 'am ' + DAY_L[wIdx(parseDkey(k))] : 'am ' + dateShort(k).slice(4);
+  return day + (time ? ' um ' + time : '');
+}
 function Stats() {
-  const [range, setRange] = useState(() => { const r = Number(lsGet('formkurve.range')); return STAT_RANGES.some(x => x[0] === r) ? r : 4; });
+  const [range, setRange] = useState(() => { const r = Number(lsGet('formkurve.range')); return STAT_RANGES.some(x => x[0] === r) ? r : 13; });
   const [openEx, setOpenEx] = useState(null);
-  const src = S.demo || S.sessions;
-  if (!Object.keys(src).length) return html`<div class="stack"><h1 class="h1" style="font-size:40px;margin-top:4px">Statistik</h1>
-    <div class="card empty"><div class="h2">Noch keine Daten</div>
-      <p class="small muted" style="margin:0;max-width:36ch">Nach deinen ersten Einheiten siehst du hier, ob du stärker wirst.</p>
-      <button class="btn primary" onClick=${() => { S.demo = makeDemo(); commit(); }}>Beispiel ansehen</button></div></div>`;
-  const R = STAT_RANGES.find(x => x[0] === range);
-  const st = computeStats(src, range), fromKey = dkey(st.from);
-  // Kennzahlen
-  const mon = mondayOf(new Date()), wk0 = dkey(mon), wk6 = dkey(addDays(mon, 6));
-  const doneWeek = Object.values(src).filter(x => x && x.date >= wk0 && x.date <= wk6).length;
-  const plannedWeek = S.settings.week.reduce((n, a) => n + a.filter(id => tpl(id)).length, 0);
-  const streak = weekStreak(src);
-  const prog = exerciseProgress(src);
-  const prCount = prog.reduce((n, x) => n + x.prs.filter(d => d >= fromKey).length, 0);
-  // Übungen nach Einheit gruppiert, nur was im Zeitraum trainiert wurde
-  const shown = prog.filter(x => x.last.date >= fromKey), seen = new Set(), groups = [];
+  const src = S.demo || S.sessions, R = STAT_RANGES.find(x => x[0] === range);
+  const st = computeStats(src, range), fromKey = dkey(st.from), today = dkey(new Date());
+  const setR = r => { setRange(r); lsSet('formkurve.range', String(r)); };
+  // Formkurve
+  const idx = strengthIndex(src), fc = forecastFrom(idx), lastI = idx[idx.length - 1];
+  const first = idx[0], kraftN = sortedSessions(src).filter(x => x.kind === 'kraft').length;
+  const fcEnd = fc.ok ? fc.at(FC_WEEKS) : null, pctTxt = x => (Math.abs(x) >= 3 ? fmtInt(Math.abs(x)) : fmt1(Math.abs(x)));
+  const gain = v => pctTxt(v / fc.y0 * 100 - 100), gainI = v => fmtInt(Math.abs(v / fc.y0 * 100 - 100));
+  const dLong = k => parseDkey(k).getDate() + '. ' + MON_L[parseDkey(k).getMonth()];
+  const delta = lastI ? lastI.y - 100 : 0, early = kraftN < 2 || Math.abs(delta) < 0.5;
+  // Woche
+  const mon = mondayOf(new Date()), wkKeys = Array.from({ length: 7 }, (_, i) => dkey(addDays(mon, i)));
+  const doneWk = sortedSessions(src).filter(x => x.date >= wkKeys[0] && x.date <= wkKeys[6]).slice().reverse();
+  const plannedWk = wkKeys.reduce((n, k) => n + planFor(k).length, 0), left = Math.max(0, plannedWk - doneWk.length);
+  const nx = !S.demo ? nextPlanned() : null, streak = weekStreak(src);
+  // Übungen nach Einheit gruppiert, mit Ziel in 8 Wochen
+  const prog = exerciseProgress(src), shown = prog.filter(x => x.last.date >= fromKey), seen = new Set(), groups = [];
   S.settings.templates.filter(t => t.kind === 'kraft').forEach(t => {
     const items = t.exercises.map(c => shown.find(x => x.id === c.id)).filter(x => x && !seen.has(x.id));
     items.forEach(x => seen.add(x.id)); if (items.length) groups.push({ name: t.name, color: t.color, items });
   });
   const rest = shown.filter(x => !seen.has(x.id)); if (rest.length) groups.push({ name: 'Weitere', color: 'push', items: rest });
-  // Wochen-Diagramm
-  const keys = COLORS.filter(k => st.weeks.some(w => w.byColor[k] > 0));
-  const cols = st.weeks.map(w => ({ label: pad2(w.d.getDate()) + '.' + pad2(w.d.getMonth() + 1) + '.', tip: 'Woche ab ' + pad2(w.d.getDate()) + '.' + pad2(w.d.getMonth() + 1) + '.', parts: w.byColor, total: keys.reduce((n, k) => n + (w.byColor[k] || 0), 0) }));
-  // Ausdauer und Kampfsport nur mit Daten
   const runs = st.list.filter(x => x.kind === 'lauf'), fights = st.list.filter(x => x.kind === 'boxen');
   const acts = [...new Set(runs.map(x => x.run.act || 'Laufen'))];
-  const setR = r => { setRange(r); lsSet('formkurve.range', String(r)); };
+  const keys = COLORS.filter(k => sortedSessions(src).some(x => x.color === k && x.date >= fromKey));
   return html`<div class="stack">
-    <h1 class="h1" style="font-size:40px;margin-top:4px">Statistik</h1>
+    <h1 class="h1" style="font-size:40px;margin-top:4px">Formkurve</h1>
     ${S.demo && html`<div class="banner"><span><b>Beispieldaten.</b> Nicht deine Werte.</span><button class="btn sm" onClick=${() => { S.demo = null; commit(); }}>Ausblenden</button></div>`}
-    <div class="tiles three">
-      <div class="tile"><span class="eyebrow">Diese Woche</span><b>${doneWeek}${plannedWeek ? html`<small>/ ${plannedWeek}</small>` : null}</b><span class="tiny faint">Einheiten</span></div>
-      <div class="tile"><span class="eyebrow">Am Stück</span><b>${streak}</b><span class="tiny faint">${streak === 1 ? 'Woche' : 'Wochen'} mit Training</span></div>
-      <div class="tile"><span class="eyebrow">Rekorde</span><b class=${prCount ? 'good' : ''}>${prCount}</b><span class="tiny faint">${R[2]}</span></div>
-    </div>
-    <div class="seg" role="group" aria-label="Zeitraum">${STAT_RANGES.map(([r, l]) => html`<button class=${range === r ? 'on' : ''} aria-pressed=${range === r ? 'true' : 'false'} onClick=${() => setR(r)}>${l}</button>`)}</div>
+
+    <section class="card fk-hero" aria-label="Deine Formkurve">
+      ${lastI && !early ? html`<h2 class="fk-title">${delta >= 0 ? '+' : '−'}${pctTxt(delta)} % ${delta >= 0 ? 'stärker' : 'schwächer'}</h2>
+          <p class="fk-sub">als bei deinem ersten Krafttraining am ${dLong(first.date)}. Seitdem ${kraftN} ${kraftN === 1 ? 'Krafttraining' : 'Krafttrainings'}.</p>`
+        : lastI ? html`<h2 class="fk-title">Deine Kurve startet</h2><p class="fk-sub">Erstes Krafttraining am ${dLong(first.date)}. Ab jetzt zählt jedes Training: Mehr Gewicht oder mehr Wiederholungen heben die Kurve.</p>`
+        : html`<h2 class="fk-title">Deine Kurve startet bald</h2><p class="fk-sub">Nach dem ersten Krafttraining siehst du hier, wie sich deine Kraft entwickelt.</p>`}
+      <${FormChart} pts=${idx} fc=${fc} from=${fromKey} rug=${sortedSessions(src)} label="Gesamtkraft im Verlauf mit Prognose" key=${'fk' + range + (S.demo ? 'd' : '')} />
+      ${keys.length ? html`<div class="legend" style="margin-top:2px">${keys.map(k => html`<span class=${'t-' + k}><i></i>${colorName(k)}</span>`)}</div>` : null}
+      <div class="fk-note">
+        <span class="fk-dash" aria-hidden="true"></span>
+        <p>${fc.ok ? (fc.r > 0 ? html`Wenn du so weitermachst wie bisher, bist du am ${dLong(fc.endK)} ca. <b>${gain(fcEnd.y)} % stärker</b> als heute, wahrscheinlich zwischen ${gainI(fcEnd.lo)} und ${gainI(fcEnd.hi)} %.`
+            : html`Zuletzt kein Plus. Mit regelmäßigem Training geht die Kurve wieder nach oben.`)
+          : fc.readyAt ? html`Die Prognose startet am ${dLong(fc.readyAt)}. Dann gibt es genug Trainings, um deinen Trend zu berechnen.`
+          : html`Die Prognose startet nach ${Math.max(1, fc.need || 1)} weiteren ${fc.need === 1 ? 'Krafttraining' : 'Krafttrainings'}.`}</p>
+        <${Info} text="Die Formkurve fasst alle Übungen zusammen: Gewicht und Wiederholungen zählen gemeinsam. Die Prognose setzt deinen Fortschritt der letzten 8 Wochen fort und wird mit der Zeit flacher, weil Fortschritt langsamer wird. Schlaf, Essen und Pausen spielen mit rein, deshalb siehst du einen Bereich." />
+      </div>
+      <div class="seg" role="group" aria-label="Zeitraum" style="margin-top:12px">${STAT_RANGES.map(([r, l]) => html`<button class=${range === r ? 'on' : ''} aria-pressed=${range === r ? 'true' : 'false'} onClick=${() => setR(r)}>${l}</button>`)}</div>
+    </section>
+
+    <section class="card wk-card" aria-label="Diese Woche">
+      <${WeekRing} done=${doneWk.map(x => x.color)} planned=${Math.max(plannedWk, doneWk.length)} />
+      <div class="stack" style="gap:4px;min-width:0">
+        <h2 class="h3">${plannedWk && !left ? 'Woche geschafft' : 'Diese Woche'}</h2>
+        <p class="small" style="margin:0">${plannedWk ? (left ? 'Noch ' + left + (left === 1 ? ' Training' : ' Trainings') + ' bis zum Wochenziel.' : 'Alle geplanten Trainings erledigt. Stark!') : doneWk.length + (doneWk.length === 1 ? ' Training' : ' Trainings') + ' diese Woche.'}</p>
+        ${nx && html`<p class="small muted" style="margin:0">Nächstes: <b class="ink">${nx.t.name}</b> ${whenWord(nx.k, nx.time)}</p>`}
+        ${streak > 1 && html`<p class="tiny faint" style="margin:0">${streak} Wochen am Stück trainiert</p>`}
+      </div>
+    </section>
+
+    <section class="card"><${MonthCal} onPick=${k => { S.sheet = { type: 'day', date: k }; commit(); }} /></section>
 
     ${groups.length ? html`<section class="card stack" style="gap:6px">
-      <div class="row between"><h2 class="h3">Fortschritt pro Übung</h2><${Info} text="Der Pfeil vergleicht dein letztes Training mit dem vor 4 Wochen. Gewicht und Wiederholungen zählen zusammen: Mehr Wiederholungen mit gleichem Gewicht sind also auch Fortschritt." /></div>
+      <div class="row between"><h2 class="h3">Übungen</h2><${Info} text="Die kleine Kurve zeigt deine letzten Trainings, gestrichelt geht sie weiter bis zum Ziel in 8 Wochen. Das Ziel ist eine Schätzung aus deinem bisherigen Fortschritt." /></div>
       ${groups.map(g => html`<div class="stack" style="gap:0">
-        ${groups.length > 1 && html`<div class=${'eyebrow t-' + g.color} style="margin:10px 0 2px;justify-content:flex-start;gap:7px"><span class="disc sm"></span>${g.name}</div>`}
-        ${g.items.map(x => { const [sym, word, cls] = TREND[x.trend], open = openEx === x.id;
-          const series = x.pts.filter(p => p.date >= fromKey);
-          return html`<div class="prog" key=${x.id}>
+        ${groups.length > 1 && html`<div class=${'grp t-' + g.color}><span class="disc sm"></span>${g.name}</div>`}
+        ${g.items.map(x => { const open = openEx === x.id, goal = exerciseGoal(x), series = x.pts.filter(p => p.date >= fromKey);
+          const sub = goal.set ? html`<span class="good">Ziel in 8 Wochen: ${fmtSet(x.bw, goal.set, false)}</span>`
+            : goal.fc.ok ? html`zuletzt gleich geblieben` : x.pts.length < 2 ? html`erst einmal trainiert` : goal.fc.readyAt ? html`Ziel ab ${dateShort(goal.fc.readyAt).slice(4)}` : html`Ziel nach ${Math.max(1, goal.fc.need)} weiteren Trainings`;
+          return html`<div class=${'prog t-' + g.color} key=${x.id}>
             <button class="prog-row" aria-expanded=${open ? 'true' : 'false'} onClick=${() => setOpenEx(open ? null : x.id)}>
-              <span class="grow" style="min-width:0"><b>${x.name}</b>
-                <div class="tiny faint">${x.base && x.trend !== 'neu' ? (x.base.date <= dkey(addDays(new Date(), -28)) ? 'vor 4 Wochen' : 'am ' + dateShort(x.base.date).slice(4)) + ': ' + fmtSet(x.bw, x.base.set, false) : 'erst seit Kurzem dabei'}</div></span>
+              <span class="grow" style="min-width:0"><b>${x.name}</b><span class="tiny faint prog-sub">${sub}</span></span>
+              <${Spark} pts=${x.pts} fc=${goal.fc} />
               <span class="data prog-now">${fmtSet(x.bw, x.last.set, false)}</span>
-              <span class=${'trend ' + cls} title=${word}><i aria-hidden="true">${sym}</i>${word}</span>
             </button>
             ${open && html`<div class="stack" style="gap:8px;padding:2px 0 12px">
               ${series.length > 1 ? html`<${LineChart} pts=${series} color=${g.color} setLabel=${q => fmtSet(q.bw, q.set, false)} label=${'Verlauf ' + x.name} key=${x.id + range} />`
-                : html`<p class="tiny faint" style="margin:0">Für eine Kurve braucht es mindestens zwei Einheiten ${R[2]}.</p>`}
+                : html`<p class="tiny faint" style="margin:0">Für eine Kurve braucht es mindestens zwei Trainings ${R[2]}.</p>`}
               <div class="row between small"><span class="muted">Bestleistung</span><span><b class="data">${fmtSet(x.bw, x.best.set, false)}</b> <span class="faint">am ${dateShort(x.best.date).slice(4)}</span></span></div>
-              <p class="tiny faint" style="margin:0">Geht die Linie hoch, bist du stärker geworden. Gewicht und Wiederholungen zählen zusammen.</p>
             </div>`}
           </div>`; })}
       </div>`)}
     </section>` : null}
 
-    <section class="card stack" style="gap:12px"><h2 class="h3">Trainings pro Woche</h2>
-      ${keys.length ? html`<${Columns} cols=${cols} keys=${keys} fmt=${fmtInt} label="Trainings pro Woche" key=${'c' + range} />${keys.length > 1 ? html`<${Legend} keys=${keys} />` : null}`
-        : html`<p class="small muted" style="margin:0">Keine Trainings ${R[2]}.</p>`}</section>
-
     ${acts.map(act => { const rs = runs.filter(x => (x.run.act || 'Laufen') === act), km = rs.reduce((n, x) => n + (x.run.km || 0), 0);
       const best = rs.filter(x => x.run.km >= 3).reduce((m, x) => (!m || x.run.sec / x.run.km < m.run.sec / m.run.km ? x : m), null);
       const far = rs.reduce((m, x) => Math.max(m, x.run.km || 0), 0), color = (rs[0] && rs[0].color) || 'run';
-      return html`<section class=${'card stack t-' + color} style="gap:10px"><h2 class="h3">${act}</h2>
+      return html`<section class=${'card stack t-' + color} style="gap:10px"><div class="row between"><h2 class="h3">${act}</h2><span class="tiny faint">${R[2]}</span></div>
         <div class="grid2">
-          <div><div class="eyebrow">Strecke</div><div class="bigval">${fmt1(km)}<small> km</small></div><div class="tiny faint">${rs.length} ${rs.length === 1 ? 'Einheit' : 'Einheiten'}</div></div>
+          <div><div class="eyebrow">Strecke</div><div class="bigval">${fmt1(km)}<small> km</small></div><div class="tiny faint">${rs.length} ${rs.length === 1 ? 'Einheit' : 'Einheiten'}, längste ${fmt1(far)} km</div></div>
           <div><div class="eyebrow">Am schnellsten</div><div class="bigval">${best ? cardioRate(best.run).main : '–'}<small> ${cardioRate({ act }).unit}</small></div><div class="tiny faint">${best ? 'ab 3 km' : 'noch kein Lauf ab 3 km'}</div></div>
-        </div>
-        <div class="tiny faint">Längste Einheit: ${fmt1(far)} km</div></section>`; })}
+        </div></section>`; })}
 
-    ${fights.length ? html`<section class=${'card stack t-' + ((fights[0] && fights[0].color) || 'box')} style="gap:10px"><h2 class="h3">Kampfsport</h2>
+    ${fights.length ? html`<section class=${'card stack t-' + ((fights[0] && fights[0].color) || 'box')} style="gap:10px"><div class="row between"><h2 class="h3">Kampfsport</h2><span class="tiny faint">${R[2]}</span></div>
       <div class="grid2">
         <div><div class="eyebrow">Runden</div><div class="bigval">${st.rounds}</div><div class="tiny faint">${fights.length} ${fights.length === 1 ? 'Einheit' : 'Einheiten'}</div></div>
         <div><div class="eyebrow">Rundenzeit</div><div class="bigval">${fmtInt(fights.reduce((n, x) => n + (x.box.rounds || 0) * (x.box.round || 0), 0) / 60)}<small> min</small></div></div>
       </div></section>` : null}
+
+    ${!Object.keys(S.sessions).length && !S.demo && html`<button class="btn ghost block" onClick=${() => { S.demo = makeDemo(); commit(); }}>Beispiel mit 10 Wochen Training ansehen</button>`}
   </div>`;
+}
+/* Tag im Kalender: erledigt, geplant (Uhrzeit ändern, verschieben, absagen), etwas dazu planen */
+function DaySheet({ sh, onClose }) {
+  const k = sh.date, today = dkey(new Date()), d = parseDkey(k);
+  const [moving, setMoving] = useState(null); const [adding, setAdding] = useState(false);
+  const done = sortedSessions().filter(x => x.date === k);
+  const open = planFor(k).filter(x => !done.some(s => s.tpl === x.t.id));
+  const go = id => { onClose(); S.tab = 'verlauf'; S.openId = id; commit(); };
+  return html`<${Sheet} onClose=${onClose} label=${'Tag ' + dateLong(d)}>
+    <h2 class="h2">${dateLong(d)}</h2>
+    ${done.length ? html`<div class="list">${done.map(s => html`<button class=${'li t-' + s.color} onClick=${() => go(s.id)}>
+      <span class="disc"></span><span class="grow"><b class="h3">${s.name}</b><div class="tiny faint">erledigt${sessMinutes(s) ? ', ' + sessMinutes(s) + ' min' : ''}</div></span>
+      <span class=${'r hl' + (sessHighlight(s).good ? ' good' : '')}>${sessHighlight(s).main}</span></button>`)}</div>` : null}
+    ${open.map(x => html`<div class=${'card flat stack t-' + x.t.color} style="gap:10px" key=${x.t.id}>
+      <div class="row" style="gap:12px"><span class="disc"></span><b class="h3 grow">${x.t.name}</b>
+        <label class="row" style="gap:6px"><span class="small muted">Uhrzeit</span><input type="time" class="inp time" value=${x.time || ''} aria-label=${'Uhrzeit für ' + x.t.name}
+          onChange=${e => moveTraining(k, x.t.id, k, e.target.value || null)} /></label></div>
+      ${moving === x.t.id ? html`<div class="row wrap" style="gap:8px"><label class="field grow"><span>Neuer Tag</span><input type="date" class="inp" min=${today} value=${k}
+            onChange=${e => { if (e.target.value && e.target.value !== k) { moveTraining(k, x.t.id, e.target.value, x.time); toast(x.t.name + ' verschoben auf ' + dateShort(e.target.value)); onClose(); } }} /></label>
+          <button class="btn sm ghost" style="align-self:flex-end" onClick=${() => setMoving(null)}>Abbrechen</button></div>`
+        : html`<div class="row wrap" style="gap:8px">
+          ${k === today && html`<button class="btn sm c" onClick=${() => { onClose(); startSession(x.t.id, k); }}>Jetzt starten</button>`}
+          ${k < today && html`<button class="btn sm c" onClick=${() => { onClose(); startSession(x.t.id, k, 'log'); }}>Nachtragen</button>`}
+          ${k >= today && html`<button class="btn sm" onClick=${() => setMoving(x.t.id)}>Verschieben</button>`}
+          <${Confirm} label="Absagen" yes="Ja, absagen" onYes=${() => { moveTraining(k, x.t.id, null); toast(x.t.name + ' abgesagt'); }} /></div>`}
+    </div>`)}
+    ${!done.length && !open.length && html`<p class="muted" style="margin:0">${k < today ? 'An diesem Tag hast du nicht trainiert.' : 'Ruhetag. Nichts geplant.'}</p>`}
+    ${adding ? html`<div class="chips">${S.settings.templates.map(t => html`<button class=${'chip c t-' + t.color} onClick=${() => { addOnce(k, t.id, null); setAdding(false); }}><span class="disc sm"></span>${t.name}</button>`)}</div>`
+      : k >= today ? html`<button class="btn ghost block" onClick=${() => setAdding(true)}>${I.plus} Training an diesem Tag planen</button>`
+      : html`<button class="btn ghost block" onClick=${() => { S.sheet = { type: 'logPick', date: k }; commit(); }}>${I.plus} Training nachtragen</button>`}
+    <p class="tiny faint" style="margin:0">Änderungen hier gelten nur für diesen Tag. Den festen Wochenplan änderst du unter Plan.</p>
+    <button class="btn primary block" onClick=${onClose}>Fertig</button>
+  </${Sheet}>`;
 }
 
 /* ---------- plan & settings ---------- */
 const KIND_L = { kraft: 'Kraft', boxen: 'Kampfsport', lauf: 'Ausdauer' };
+/* „heute, 19:40“ / „gestern“ / „am 12.11.“ */
+function whenAgo(ms) { const k = dkey(new Date(ms)), d = Math.round((parseDkey(dkey(new Date())) - parseDkey(k)) / 86400000), t = new Date(ms); return d === 0 ? 'heute um ' + pad2(t.getHours()) + ':' + pad2(t.getMinutes()) : d === 1 ? 'gestern' : 'am ' + dateShort(k).slice(4); }
 function Plan() {
   const st = S.settings, p = st.prefs, fileRef = useRef(null);
   const [day, setDay] = useState(null);
@@ -2485,14 +2886,19 @@ function Plan() {
   return html`<div class="stack">
     <h1 class="h1" style="font-size:40px;margin-top:4px">Plan</h1>
     <section class="card stack" style="gap:0"><div class="row between" style="margin-bottom:6px"><h2 class="h3">Wochenplan</h2><span class="tiny faint">Tag antippen zum Ändern</span></div>
-      ${DAY_L.map((dn, i) => { const on = st.week[i].map(tpl).filter(Boolean), open = day === i;
+      ${DAY_L.map((dn, i) => { const on = st.week[i].map(tpl).filter(Boolean), open = day === i, tm = id => (st.times || {})[i + '|' + id];
         return html`<div style=${'border-top:' + (i ? '1px solid var(--line-2)' : '0')}>
-          <button class="dayrow" aria-expanded=${open ? 'true' : 'false'} aria-label=${dn + ': ' + (on.length ? on.map(t => t.name).join(', ') : 'Ruhetag') + ', ändern'} onClick=${() => setDay(open ? null : i)}>
+          <button class="dayrow" aria-expanded=${open ? 'true' : 'false'} aria-label=${dn + ': ' + (on.length ? on.map(t => t.name + (tm(t.id) ? ' um ' + tm(t.id) : '')).join(', ') : 'Ruhetag') + ', ändern'} onClick=${() => setDay(open ? null : i)}>
             <span class="d">${DAY_S[i]}</span>
-            <span class="grow chips" style="gap:6px">${on.length ? on.map(t => html`<span class=${'chip c sm on t-' + t.color}>${t.name}</span>`) : html`<span class="small faint">Ruhetag</span>`}</span>
+            <span class="grow chips" style="gap:6px">${on.length ? on.map(t => html`<span class=${'chip c sm on t-' + t.color}>${t.name}${tm(t.id) ? html`<span class="chip-time">${tm(t.id)}</span>` : null}</span>`) : html`<span class="small faint">Ruhetag</span>`}</span>
             <span class="iconbtn" aria-hidden="true" style=${'transform:rotate(' + (open ? 180 : 0) + 'deg)'}>${I.down}</span></button>
-          ${open && html`<div class="chips" style="padding:0 0 12px 42px">${st.templates.map(t => { const sel = st.week[i].includes(t.id); return html`<button class=${'chip c t-' + t.color + (sel ? ' on' : '')} aria-pressed=${sel ? 'true' : 'false'}
-            onClick=${() => { st.week[i] = sel ? st.week[i].filter(x => x !== t.id) : [...st.week[i], t.id]; saveSettings(); }}>${t.name}</button>`; })}</div>`}
+          ${open && html`<div class="stack" style="gap:2px;padding:0 0 12px 42px">
+            <div class="chips">${st.templates.map(t => { const sel = st.week[i].includes(t.id); return html`<button class=${'chip c t-' + t.color + (sel ? ' on' : '')} aria-pressed=${sel ? 'true' : 'false'}
+              onClick=${() => { st.week[i] = sel ? st.week[i].filter(x => x !== t.id) : [...st.week[i], t.id]; if (sel) delete st.times[i + '|' + t.id]; saveSettings(); }}>${t.name}</button>`; })}</div>
+            ${on.map(t => html`<label class=${'time-row t-' + t.color}><span class="row" style="gap:8px"><span class="disc sm"></span><span class="small">${t.name} um</span></span>
+              <input type="time" class="inp time" value=${tm(t.id) || ''} aria-label=${'Uhrzeit für ' + t.name + ' am ' + dn} onChange=${e => setWeekTime(i, t.id, e.target.value || null)} /></label>`)}
+            ${on.length > 0 && html`<p class="tiny faint" style="margin:4px 0 0">Ohne Uhrzeit gibt es keine Erinnerung.</p>`}
+          </div>`}
         </div>`; })}
     </section>
     <section class="card stack" style="gap:2px"><h2 class="h3" style="margin-bottom:6px">Einheiten</h2>
@@ -2505,6 +2911,8 @@ function Plan() {
       <div class="field" style="padding:6px 0"><span>Design</span><div class="seg">${[['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => html`<button class=${p.theme === k ? 'on' : ''} onClick=${() => { setPref('theme', k); applyTheme(); }}>${l}</button>`)}</div></div>
       <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Am Pausenende, auch im Stummmodus' : 'Am Pausenende. Im Stummmodus bleibt die Webseite oft still.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
       ${Cap() && html`<div class="row between" style="gap:10px;padding:2px 0"><span class="small muted">Mitteilung bei gesperrtem iPhone</span><button class="btn sm" onClick=${testNotify}>Testen</button></div>`}
+      ${Cap() && html`<hr class="hr" /><div class="field" style="padding:6px 0"><span>Erinnerung vor dem Training</span><div class="seg" role="group" aria-label="Erinnerung vor dem Training">${[[0, 'Aus'], [15, '15 Min.'], [30, '30 Min.'], [60, '1 Std.']].map(([v, l]) => html`<button class=${(Number(p.remind) || 0) === v ? 'on' : ''} aria-pressed=${(Number(p.remind) || 0) === v ? 'true' : 'false'} onClick=${() => { setPref('remind', v); if (v) scheduleReminders(true); }}>${l}</button>`)}</div>
+        <span class="tiny faint" style="font-weight:400">Für alle Trainings mit Uhrzeit im Wochenplan.</span></div>`}
       <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Piept in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); beep([660], 0.07); } }} />
       <hr class="hr" /><${Toggle} on=${!!p.voice} label="Sprachansage" hint="Sagt die nächste Übung an" onChange=${v => { setPref('voice', v); if (v) { _voiceReady = false; unlockAudio(); setTimeout(() => say('Pause vorbei. Butterfly, Satz 3'), 150); } }} />
       ${canVibrate && html`<hr class="hr" /><${Toggle} on=${p.vibrate} label="Vibration" hint="Am Pausenende" onChange=${v => setPref('vibrate', v)} />`}
@@ -2532,6 +2940,15 @@ function Plan() {
       <${Toggle} on=${p.paceMode === 'pace'} label="Lauftempo in min/km" hint="Statt km/h" onChange=${v => setPref('paceMode', v ? 'pace' : 'kmh')} />
       <hr class="hr" /><${Toggle} on=${p.carryW !== false} label="Gewicht für nächste Sätze übernehmen" hint="Änderst du ein Gewicht, gilt es auch für die folgenden Sätze" onChange=${v => setPref('carryW', v)} />
     </section>
+    ${Cap() && html`<section class="card stack" style="gap:10px"><h2 class="h3">iPhone-App</h2>
+      <div class="row between" style="gap:12px;align-items:flex-start"><div class="stack" style="gap:2px;min-width:0"><b class="small">SideStore</b>
+        <span class="small muted">${sideDaysLeft() > 0 ? 'Läuft in ' + sideDaysLeft() + (sideDaysLeft() === 1 ? ' Tag' : ' Tagen') + ' ab.' : 'Läuft heute ab.'} Einen Tag vorher kommt eine Erinnerung.</span></div>
+        <button class="btn sm" onClick=${sideRefreshed}>Heute erneuert</button></div>
+      <hr class="hr" />
+      <div class="row between" style="gap:12px;align-items:flex-start"><div class="stack" style="gap:2px;min-width:0"><b class="small">Automatisches Backup</b>
+        <span class="small muted">Täglich, die letzten 7 Tage bleiben gespeichert.${S.meta.autoBackupAt ? ' Zuletzt ' + whenAgo(S.meta.autoBackupAt) + '.' : ''}</span></div>
+        <button class="btn sm" onClick=${async () => { await autoBackup(true); toast(S.meta.autoBackupAt && Date.now() - S.meta.autoBackupAt < 60000 ? 'Backup gespeichert' : 'Backup hat nicht geklappt'); }}>Jetzt sichern</button></div>
+    </section>`}
     <section class="card stack" style="gap:10px"><h2 class="h3">Daten</h2>
       <p class="small muted" style="margin:0">Alles bleibt auf diesem Gerät. ${lb ? 'Letztes Backup: ' + dateShort(dkey(new Date(lb))) + '.' : 'Noch kein Backup.'}</p>
       <div class="grid2">
@@ -2551,7 +2968,7 @@ function Plan() {
         <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Trainings im Verlauf.</p>
       </div></details>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.5.0</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.6.0</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {

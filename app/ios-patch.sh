@@ -13,7 +13,10 @@ pb "Add :UIBackgroundModes:0 string location"
 pb "Add :WKAppBoundDomains array"
 pb "Add :WKAppBoundDomains:0 string nicorickert116-cmd.github.io"
 pb "Add :ITSAppUsesNonExemptEncryption bool false"
-/usr/libexec/PlistBuddy -c "Print" "$P" | grep -E "Location|UIBackgroundModes|location|WKAppBound|github" || true
+# Auto-Backups (Ordner „Dokumente“ der App) in der Dateien-App sichtbar machen: Dateien → Auf meinem iPhone → Formkurve
+pb "Add :UIFileSharingEnabled bool true"
+pb "Add :LSSupportsOpeningDocumentsInPlace bool true"
+/usr/libexec/PlistBuddy -c "Print" "$P" | grep -E "Location|UIBackgroundModes|location|WKAppBound|github|FileSharing|OpeningDocuments" || true
 
 # Töne auch im Stummmodus, gemischt mit laufender Musik
 AD=ios/App/App/AppDelegate.swift
