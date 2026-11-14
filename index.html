@@ -759,13 +759,27 @@ function say(text) {
 const Cap = () => (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform() ? window.Capacitor : null);
 const nativePlugin = n => { const c = Cap(); return c && c.Plugins ? c.Plugins[n] : null; };
 let _notifPerm = null;
+/* Mitteilungs-Erlaubnis (App): fragt beim ersten Mal, danach nur noch Status */
+async function nativeNotifyPerm() {
+  const LN = nativePlugin('LocalNotifications'); if (!LN) return false;
+  if (_notifPerm === true) return true;
+  try { const p = await LN.requestPermissions(); _notifPerm = !!p && p.display === 'granted'; } catch (e) { _notifPerm = false; }
+  return _notifPerm;
+}
+async function testNotify() {
+  unlockAudio();
+  if (!(await nativeNotifyPerm())) { toast('Mitteilungen sind aus. Erlaube sie unter iPhone-Einstellungen → Formkurve → Mitteilungen.'); return; }
+  const at = Date.now() + 6000;
+  nativeNotify(103, at, 'Pause vorbei', 'So meldet sich Formkurve, auch bei gesperrtem iPhone.');
+  setTimeout(() => { if (document.visibilityState === 'visible') { beep([880, 1175, 1568], 0.14, 0.16); toast('So klingt das Pausenende'); } }, 6000);
+  toast('Sperr jetzt dein iPhone. In 6 Sekunden kommt die Mitteilung.');
+}
 async function nativeNotify(id, at, title, body) {
   const LN = nativePlugin('LocalNotifications'); if (!LN) return;
   try {
     await LN.cancel({ notifications: [{ id }] });
     if (!at || at <= Date.now() + 1500) return;
-    if (_notifPerm == null) { const p = await LN.requestPermissions(); _notifPerm = !!p && p.display === 'granted'; }
-    if (!_notifPerm) return;
+    if (!(await nativeNotifyPerm())) return;
     await LN.schedule({ notifications: [{ id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } }] });
   } catch (e) {}
 }
@@ -851,6 +865,7 @@ function startSession(tplId, dateKey, mode) {
   const t = tpl(tplId); if (!t) return;
   if (S.active) { S.showWorkout = true; S.sheet = null; toast(S.active.log ? 'Du trägst gerade schon eine Einheit nach' : 'Es läuft schon eine Einheit'); return; }
   unlockAudio();
+  if (mode !== 'log' && t.kind !== 'lauf') nativeNotifyPerm();      // App: Mitteilungs-Abfrage gleich zu Beginn, nicht erst mitten im Satz
   const now = Date.now();
   const s = { id: uid('s_'), tpl: t.id, name: t.name, kind: t.kind, color: t.color, date: dateKey || dkey(new Date()), start: now, end: null, note: '', rpe: null };
   if (t.kind === 'kraft') s.ex = t.exercises.map(c => buildExercise(c, s.id));
@@ -2377,6 +2392,7 @@ function Plan() {
     <section class="card stack" style="gap:6px"><h2 class="h3">Einstellungen</h2>
       <div class="field" style="padding:6px 0"><span>Design</span><div class="seg">${[['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => html`<button class=${p.theme === k ? 'on' : ''} onClick=${() => { setPref('theme', k); applyTheme(); }}>${l}</button>`)}</div></div>
       <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Pausenende und Gong, auch im Stummmodus und mit Sperrbildschirm-Hinweis' : 'Pausenende, Gong im Rundentimer. Im Stummmodus kann das iPhone Töne der Webseite unterdrücken, in der Formkurve-App nicht.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
+      ${Cap() && html`<div class="row between" style="gap:10px;padding:2px 0"><span class="small muted">Mitteilung bei gesperrtem iPhone</span><button class="btn sm" onClick=${testNotify}>Testen</button></div>`}
       <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Kurzes Piepen in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); beep([660], 0.07); } }} />
       <hr class="hr" /><${Toggle} on=${!!p.voice} label="Sprachansage" hint="Sagt an, was als Nächstes kommt, zum Beispiel „Pause vorbei. Butterfly, Satz 3“" onChange=${v => { setPref('voice', v); if (v) { _voiceReady = false; unlockAudio(); setTimeout(() => say('Pause vorbei. Butterfly, Satz 3'), 150); } }} />
       <hr class="hr" /><${Toggle} on=${p.vibrate} label="Vibration" hint="Auf Android; iPhones unterstützen das im Browser nicht" onChange=${v => setPref('vibrate', v)} />
@@ -2419,7 +2435,7 @@ function Plan() {
       </div>
       <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Einheiten im Verlauf.</p>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4.2</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4.3</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
