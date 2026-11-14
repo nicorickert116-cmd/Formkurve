@@ -555,7 +555,7 @@ function exTyp(e) { if (e && (e.typ === 'grund' || e.typ === 'iso')) return e.ty
 /* ---------- plan presets ---------- */
 const BOX_DEF = { rounds: 6, round: 180, rest: 60, warn: 10, prep: 10, art: 'Sandsack' };
 const RUN_DEF = { act: 'Laufen', art: 'Locker', km: 5 };
-const ACTS = { Laufen: { unit: '/km', per: 1 }, Gehen: { unit: '/km', per: 1 }, Radfahren: { speed: true }, Schwimmen: { unit: '/100 m', per: 0.1 }, Rudern: { unit: '/500 m', per: 0.5 }, Sonstiges: { speed: true } };
+const ACTS = { Laufen: { unit: '/km', per: 1, kmh: true }, Gehen: { unit: '/km', per: 1, kmh: true }, Radfahren: { speed: true }, Schwimmen: { unit: '/100 m', per: 0.1 }, Rudern: { unit: '/500 m', per: 0.5 }, Sonstiges: { speed: true } };
 const PRESETS = {
   gk: { name: 'Ganzkörper', desc: '3 Tage pro Woche, zwei Varianten im Wechsel. Gut für den Einstieg.', legsToggle: true,
     tpls: [{ name: 'Ganzkörper A', focus: 'Kniebeuge · Bankdrücken · Rudern', ex: ['kniebeuge', 'bankdruecken', 'lh_rudern', 'seitheben', 'pushdown', 'kabelcrunch'] },
@@ -628,10 +628,12 @@ function normalizeSettings(s) {
   o.restV = 3;
   return o;
 }
-function cardioRate(run) {
-  const a = ACTS[(run && run.act) || 'Laufen'] || ACTS.Laufen;
-  if (!run || !(run.km > 0 && run.sec > 0)) return { main: '–', unit: a.speed ? 'km/h' : a.unit };
-  if (a.speed) return { main: fmt1(run.km / (run.sec / 3600)), unit: 'km/h' };
+/* Laufen/Gehen: Standard km/h, in den Einstellungen auf min/km umstellbar */
+function actSpeed(act) { const a = ACTS[act] || ACTS.Laufen; return !!(a.speed || (a.kmh && pref('paceMode') !== 'pace')); }
+function cardioRate(run, asPace) {
+  const act = (run && run.act) || 'Laufen', a = ACTS[act] || ACTS.Laufen, sp = a.speed || (!asPace && actSpeed(act));
+  if (!run || !(run.km > 0 && run.sec > 0)) return { main: '–', unit: sp ? 'km/h' : a.unit };
+  if (sp) return { main: fmt1(run.km / (run.sec / 3600)), unit: 'km/h' };
   return { main: fmtPace((run.sec / run.km) * a.per), unit: a.unit };
 }
 
@@ -1647,8 +1649,8 @@ function RunLog({ a }) {
           onInput=${e => { setDur(e.target.value); r.sec = parseDur(e.target.value); touch(); }} /></label>
       </div>
       <div class="row between" style="align-items:flex-end">
-        <div><div class="eyebrow">${A.speed ? 'Tempo' : 'Pace'}</div><div class="bigread">${rate.main}<span class="small faint" style="font-family:var(--font-body);letter-spacing:0"> ${rate.unit}</span></div></div>
-        ${!A.speed && html`<div style="text-align:right"><div class="eyebrow">Schnitt</div><div class="data" style="font-size:18px">${cur ? fmt1(3600 / cur) : '–'} km/h</div></div>`}
+        <div><div class="eyebrow">${actSpeed(act) ? 'Tempo' : 'Pace'}</div><div class="bigread">${rate.main}<span class="small faint" style="font-family:var(--font-body);letter-spacing:0"> ${rate.unit}</span></div></div>
+        ${!A.speed && html`<div style="text-align:right"><div class="eyebrow">${actSpeed(act) ? 'Pace' : 'Tempo'}</div><div class="data" style="font-size:18px">${actSpeed(act) ? html`${cardioRate(r, true).main} ${A.unit}` : html`${cur ? fmt1(3600 / cur) : '–'} km/h`}</div></div>`}
       </div>
       ${cur && best && r.km >= 3 && cur < bestPace ? html`<div class="sug up">${I.up}<span>Dein schnellster Wert ab 3 km. Bisher: ${best.main} ${best.unit}.</span></div>` : null}
       <label class="field"><span>Puls im Schnitt (optional)</span><${NumInput} id=${'run-hr-' + a.id} decimals=${false} value=${r.hr} placeholder="bpm" onChange=${v => { r.hr = v; touch(); }} /></label>
@@ -1753,7 +1755,7 @@ function hav(a, b) {
   const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * k) * Math.cos(b[0] * k) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
 }
-function trackElapsed(L) { return Math.max(0, ((L.paused ? L.pauseAt : Date.now()) - L.t0 - L.pausedMs) / 1000); }
+function trackElapsed(L) { if (L.fixed === false) return 0; return Math.max(0, ((L.paused ? L.pauseAt : Date.now()) - L.t0 - L.pausedMs) / 1000); }
 function trackDistOf(pts) { let d = 0; for (let i = 1; i < pts.length; i++) if (pts[i] && pts[i - 1]) d += hav(pts[i - 1], pts[i]); return d; }
 /* Kilometer-Zwischenzeiten aus Punkten (für GPX-Import) */
 function splitsOf(pts) {
@@ -1769,7 +1771,7 @@ function splitsOf(pts) {
 function trackStart() {
   const a = S.active; if (!a || a.kind !== 'lauf') return;
   const r = a.run;
-  if (!r.live || !r.live.on) r.live = { on: true, paused: false, t0: Date.now(), pausedMs: 0, pauseAt: 0, dist: 0, pts: [], splits: [], acc: null };
+  if (!r.live || !r.live.on) r.live = { on: true, paused: false, t0: Date.now(), pausedMs: 0, pauseAt: 0, dist: 0, pts: [], splits: [], acc: null, fixed: false };
   unlockAudio(); wakeOn(); trackWatch(); touch();
 }
 function trackWatch() {
@@ -1802,6 +1804,7 @@ function trackPoint(lat, lng, acc, t) {
   if (!L || !L.on || L.paused) return;
   L.acc = Math.round(acc || 0);
   if (!(acc <= 35)) { commit(); return; }                       // zu ungenau
+  if (L.fixed === false) { L.fixed = true; L.t0 = Date.now(); L.pausedMs = 0; L.pauseAt = 0; }  // Uhr startet mit dem ersten genauen GPS-Punkt
   const p = [Math.round(lat * 1e5) / 1e5, Math.round(lng * 1e5) / 1e5, Math.round(t / 1000)];
   const last = L.pts.length ? L.pts[L.pts.length - 1] : null;
   if (last) {
@@ -1833,13 +1836,33 @@ function trackStop() {
   saveActive(true); commit();
 }
 function trackDiscard() { const r = S.active && S.active.run; if (!r) return; trackUnwatch(); r.live = null; r.trackVer = (r.trackVer || 0) + 1; touch(); }
-/* aktuelles Tempo aus den letzten 30 Sekunden */
-function trackNowPace(L) {
-  const pts = L.pts; if (pts.length < 2) return null;
-  const tEnd = pts[pts.length - 1] && pts[pts.length - 1][2]; if (!tEnd) return null;
-  let d = 0, t = 0;
-  for (let i = pts.length - 1; i > 0; i--) { const a = pts[i - 1], b = pts[i]; if (!a || !b) break; d += hav(a, b); t = tEnd - a[2]; if (t >= 30) break; }
-  return d > 20 && t > 0 ? t / (d / 1000) : null;
+/* aktuelles Tempo: Strecke der letzten 30 Sekunden bis JETZT (wer stehen bleibt, wird langsamer bzw. „–“) */
+const NOW_WIN = 30;
+function trackNowPace(L, nowSec) {
+  if (!L || L.paused) return null;
+  const pts = L.pts, last = pts[pts.length - 1]; if (!last) return null;
+  const tNow = nowSec != null ? nowSec : Date.now() / 1000;
+  const tEnd = tNow - last[2] <= 10 ? last[2] : tNow, from = tEnd - NOW_WIN;  // kurze Lücken zwischen Punkten nicht als Stehen werten
+  let d = 0, tStart = null;
+  for (let i = pts.length - 1; i > 0; i--) {
+    const a = pts[i - 1], b = pts[i]; if (!a || !b) break;
+    if (b[2] <= from) break;
+    const seg = hav(a, b), span = b[2] - a[2];
+    if (a[2] >= from) { d += seg; tStart = a[2]; }
+    else { d += span > 0 ? seg * (b[2] - from) / span : 0; tStart = from; break; }
+  }
+  if (tStart == null) return null;
+  const t = tEnd - tStart;
+  if (t < 8 || d < 15) return null;
+  const p = t / (d / 1000);
+  return p > 1800 ? null : p;                                      // unter 2 km/h = steht
+}
+/* Schnitt erst ab 100 m – vorher ist er bedeutungslos (z. B. Warten aufs GPS) */
+function trackAvg(act, km, sec) {
+  if (!(km >= 0.1)) return null;
+  const a = ACTS[act] || ACTS.Laufen;
+  if (sec / km > 3600) return null;                                // langsamer als 1 km/h
+  return cardioRate({ act, km, sec });
 }
 /* GPX-Datei (z. B. aus Strava, Garmin, Apple Watch) einlesen */
 function importGpx(file) {
@@ -1882,9 +1905,14 @@ function resumeTrackingAfterReload() {
 }
 
 /* ---------- Strecke als Linie (ohne Karte) ---------- */
-function RouteSvg({ pts, h = 170, live }) {
+function liveHint(acc) {
+  if (acc == null) return 'Warte auf GPS-Signal … Die Zeit startet mit dem ersten genauen Punkt.';
+  if (acc > 35) return 'GPS noch zu ungenau (±' + acc + ' m). Geh am besten ins Freie. Die Zeit startet, sobald es genau genug ist.';
+  return 'GPS bereit, lauf los. Die Strecke erscheint nach ein paar Metern.';
+}
+function RouteSvg({ pts, h = 170, live, acc }) {
   const real = (pts || []).filter(Boolean);
-  if (real.length < 2) return html`<div class="route-empty tiny faint">${live ? 'Warte auf GPS-Signal …' : 'Keine Strecke'}</div>`;
+  if (real.length < 2) return html`<div class="route-empty tiny faint">${live ? liveHint(acc) : 'Keine Strecke'}</div>`;
   const W = 320, pad = 10;
   const lat0 = real.reduce((s, p) => s + p[0], 0) / real.length, kx = Math.cos(lat0 * Math.PI / 180);
   const xs = real.map(p => p[1] * kx), ys = real.map(p => -p[0]);
@@ -1904,7 +1932,7 @@ function RouteSvg({ pts, h = 170, live }) {
 function SplitsTable({ splits, act }) {
   if (!splits || !splits.length) return null;
   const laps = splits.map((t, i) => t - (i ? splits[i - 1] : 0)), best = Math.min(...laps);
-  return html`<div class="tablewrap" style="margin:0"><table><thead><tr><th>km</th><th class="n">Zeit</th><th class="n">${(ACTS[act] || ACTS.Laufen).speed ? 'km/h' : 'Tempo'}</th></tr></thead><tbody>
+  return html`<div class="tablewrap" style="margin:0"><table><thead><tr><th>km</th><th class="n">Zeit</th><th class="n">${actSpeed(act) ? 'km/h' : 'Tempo'}</th></tr></thead><tbody>
     ${laps.map((l, i) => html`<tr><td style="padding-left:0">${i + 1}${l === best && laps.length > 1 ? html` <span class="pr">TOP</span>` : ''}</td><td class="n">${fmtDur(splits[i])}</td><td class="n" style="padding-right:0">${cardioRate({ act, km: 1, sec: l }).main}</td></tr>`)}</tbody></table></div>`;
 }
 
@@ -1913,17 +1941,17 @@ function TrackCard({ a }) {
   const r = a.run, L = r.live, act = r.act || 'Laufen', gpxRef = useRef(null);
   const app = !!Cap();
   if (L && L.on) {
-    const el = trackElapsed(L), km = L.dist / 1000, avg = cardioRate({ act, km, sec: el }), nowP = trackNowPace(L);
-    const nowR = nowP ? cardioRate({ act, km: 1, sec: nowP }) : null;
+    const el = trackElapsed(L), km = L.dist / 1000, avg = trackAvg(act, km, el), nowP = trackNowPace(L);
+    const nowR = nowP ? cardioRate({ act, km: 1, sec: nowP }) : null, unitOf = cardioRate({ act }).unit;
     return html`<div class="card stack track-live" style="gap:12px">
       <div class="row between"><span class="eyebrow">${L.paused ? 'Pausiert' : 'Tracking läuft'}</span>
         <span class=${'gps ' + (L.acc == null ? '' : L.acc <= 15 ? 'ok' : L.acc <= 35 ? 'mid' : 'bad')}><i></i>${L.acc == null ? 'Suche GPS' : 'GPS ±' + L.acc + ' m'}</span></div>
       <div class="track-big"><div><b class="data">${km.toFixed(2).replace('.', ',')}</b><span>km</span></div><div><b class="data">${fmtDur(el)}</b><span>Zeit</span></div></div>
       <div class="grid2">
-        <div><div class="eyebrow">Schnitt</div><div class="data" style="font-size:18px;margin-top:3px">${avg.main} <span class="tiny faint">${avg.unit}</span></div></div>
-        <div><div class="eyebrow">Aktuell</div><div class="data" style="font-size:18px;margin-top:3px">${nowR ? nowR.main : '–'} <span class="tiny faint">${nowR ? nowR.unit : ''}</span></div></div>
+        <div><div class="eyebrow">Schnitt</div><div class="data" style="font-size:18px;margin-top:3px">${avg ? avg.main : '–'} <span class="tiny faint">${unitOf}</span></div>${!avg && html`<div class="tiny faint">ab 100 m</div>`}</div>
+        <div><div class="eyebrow">Aktuell</div><div class="data" style="font-size:18px;margin-top:3px">${nowR ? nowR.main : '–'} <span class="tiny faint">${unitOf}</span></div>${!nowR && !L.paused && L.pts.length > 1 && html`<div class="tiny faint">steht</div>`}</div>
       </div>
-      <${RouteSvg} pts=${L.pts} live=${true} />
+      <${RouteSvg} pts=${L.pts} live=${true} acc=${L.acc} />
       <${SplitsTable} splits=${L.splits} act=${act} />
       ${!app && html`<p class="tiny warnline" style="margin:0">Lass den Bildschirm an. Im Browser stoppt das GPS, sobald du das Handy sperrst. In der Formkurve-App läuft es auch gesperrt weiter.</p>`}
       <div class="row" style="gap:8px">
@@ -2372,6 +2400,7 @@ function Plan() {
       <hr class="hr" /><${Toggle} on=${!!p.restByReps} label="Immer nach Tabelle" hint="Auch selbst eingestellte Pausen folgen dann der Tabelle." onChange=${v => setPref('restByReps', v)} />
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Erweitert</h2>
+      <${Toggle} on=${p.paceMode === 'pace'} label="Lauftempo als min/km" hint="Aus: km/h (Standard). An: Pace in Minuten pro Kilometer, wie bei Lauf-Uhren." onChange=${v => setPref('paceMode', v ? 'pace' : 'kmh')} />
       <${Toggle} on=${p.carryW !== false} label="Gewicht in die nächsten Sätze übernehmen" hint="Änderst du das Gewicht, übernehmen es die folgenden Sätze." onChange=${v => setPref('carryW', v)} />
     </section>
     <section class="card stack" style="gap:10px"><h2 class="h3">Daten</h2>
@@ -2390,7 +2419,7 @@ function Plan() {
       </div>
       <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Einheiten im Verlauf.</p>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4.1</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4.2</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
