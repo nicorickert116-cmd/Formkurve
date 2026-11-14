@@ -338,6 +338,41 @@ button.n{width:100%;min-height:44px;padding:0}
 .inl{display:inline-flex;vertical-align:-3px}.inl svg{width:16px;height:16px}
 .resume button svg{width:22px;height:22px;flex:none}
 .wo-head .clock{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- 1.5: einfacher & übersichtlicher ---------- */
+.good{color:var(--good)!important;font-weight:700}
+.tiles.three{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tiles.three .tile{padding:12px 11px}
+.tiles.three .tile b{font-size:34px}
+.tiles.three .tile b small{font-size:16px}
+.tiles.three .eyebrow{font-size:11px;letter-spacing:.06em}
+.bigval{font:600 26px/1.1 var(--font-body);letter-spacing:-.01em;margin-top:4px}
+.bigval small{font-size:14px;font-weight:600;color:var(--ink-2)}
+details.info{position:relative}
+details.info summary{list-style:none;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--ink-3);color:var(--ink-3);display:grid;place-items:center;font:700 13px/1 var(--font-body);font-style:italic;cursor:pointer}
+details.info summary::-webkit-details-marker{display:none}
+details.info[open] summary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+details.info p{position:absolute;right:0;top:30px;z-index:5;width:min(280px,78vw);margin:0;padding:10px 12px;border-radius:12px;background:var(--ink);color:var(--surface);font-size:13.5px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.prog{border-top:1px solid var(--line-2)}
+.prog:first-of-type{border-top:0}
+.prog-row{display:grid;grid-template-columns:minmax(0,1fr) auto 74px;gap:10px;align-items:center;width:100%;text-align:left;padding:11px 0}
+.prog-row b{font-weight:600;font-size:15.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog-now{font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap}
+.trend{display:inline-flex;align-items:center;justify-content:flex-end;gap:5px;font-size:13px;font-weight:700;white-space:nowrap}
+.trend i{font-style:normal;font-size:11px}
+.trend.up{color:var(--good)}
+.trend.eq{color:var(--ink-3)}
+.trend.down{color:var(--warn)}
+.li .r.hl{font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--ink-2)}
+.tag{font:600 11.5px/1 var(--font-body);color:var(--ink-2);background:var(--surface-2);border-radius:6px;padding:5px 7px}
+.dayrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 0;min-height:52px}
+.dayrow .d{width:32px;font-weight:700}
+.chip.sm{min-height:28px;padding:0 10px;font-size:13px}
+details.more{border-top:1px solid var(--line-2);padding-top:10px;margin-top:4px}
+details.more summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--ink-2);list-style:none;display:flex;align-items:center;gap:6px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+details.more[open] summary::after{transform:rotate(-135deg) translateY(-1px)}
 </style>
 </head>
 <body>
@@ -429,12 +464,13 @@ function suggest(cfg, last) {
   const wl = w => (cfg.bw ? (w > 0 ? '+' + fmtKg(w) + ' kg' : 'Körpergewicht') : fmtKg(w) + ' kg');
   if (top >= N) {
     const nw = round2(W + (cfg.inc || 2.5));
-    return { mode: 'up', w: nw, prevW: W, reps: Array(N).fill(cfg.lo), text: `Alle Sätze bei ${cfg.hi}+ Wdh. Steigern: ${wl(W)} → ${wl(nw)}, neu ab ${cfg.lo} Wdh.` };
+    return { mode: 'up', w: nw, prevW: W, reps: Array(N).fill(cfg.lo), text: `Mehr Gewicht: ${wl(W)} → ${wl(nw)}. Ziel ${cfg.lo} Wdh.` };
   }
   const best = Math.max(...atW.map(s => s.r || 0));
-  if (best < cfg.lo) return { mode: 'low', w: W, reps: Array(N).fill(cfg.lo), text: `Letztes Mal unter ${cfg.lo} Wdh. ${wl(W)} halten und sauber ${cfg.lo}+ schaffen.` };
+  if (best < cfg.lo) return { mode: 'low', w: W, reps: Array(N).fill(cfg.lo), text: `${wl(W)} bleiben, Ziel ${cfg.lo} Wdh.` };
   const reps = []; for (let i = 0; i < N; i++) { const s = atW[i]; reps.push(s ? Math.min(cfg.hi, (s.r || 0) + 1) : cfg.lo); }
-  return { mode: 'hold', w: W, reps, text: `${wl(W)} halten. Ziel: ${reps.join(' · ')} Wdh., dann steigern bei ${N} × ${cfg.hi}.` };
+  const same = reps.every(r => r === reps[0]);
+  return { mode: 'hold', w: W, reps, text: `${wl(W)} · Ziel ${same ? reps[0] : reps.join(' / ')} Wdh.${reps.every(r => r >= cfg.hi) ? ' Schaffst du das, gibt es nächstes Mal mehr Gewicht.' : ''}` };
 }
 
 
@@ -681,10 +717,17 @@ function bestE1(exId, excludeId) {
 function sessVolume(s) { let v = 0; for (const e of s.ex || []) for (const st of e.sets || []) v += loadOf(e, st.w) * setReps(st); return v; }
 function sessSets(s) { let n = 0; for (const e of s.ex || []) n += (e.sets || []).length; return n; }
 function sessMetric(s) {
-  if (s.kind === 'kraft') return { main: fmtInt(sessVolume(s)) + ' kg', sub: sessSets(s) + ' Sätze' };
+  if (s.kind === 'kraft') { const n = (s.ex || []).length; return { main: sessSets(s) + ' Sätze', sub: n + (n === 1 ? ' Übung' : ' Übungen') }; }
   if (s.kind === 'boxen') return { main: ((s.box && s.box.rounds) || 0) + ' × ' + fmtDur((s.box && s.box.round) || 0), sub: (s.box && s.box.art) || 'Runden' };
   if (s.kind === 'lauf') { const r = cardioRate(s.run); return { main: fmt1(s.run && s.run.km) + ' km', sub: r.main + ' ' + r.unit }; }
   return { main: '', sub: '' };
+}
+/* das Wichtigste einer Einheit in einem Wort: Rekorde, sonst Sätze / km / Runden */
+function sessHighlight(s) {
+  if (s.kind === 'kraft') { const prs = (s.ex || []).filter(e => (e.sets || []).some(x => x.pr)).length; return prs ? { main: prs + (prs === 1 ? ' Rekord' : ' Rekorde'), good: true } : { main: sessSets(s) + ' Sätze' }; }
+  if (s.kind === 'lauf') return { main: fmt1(s.run && s.run.km) + ' km' };
+  if (s.kind === 'boxen') return { main: ((s.box && s.box.rounds) || 0) + ' Runden' };
+  return { main: '' };
 }
 const sessMinutes = s => (s.end && s.start ? Math.max(1, Math.round((s.end - s.start) / 60000)) : null);
 
@@ -1102,7 +1145,6 @@ function computeStats(src, nWeeks) {
   for (const s of list) {
     const w = weeks[weekIndex(s, from)]; if (!w) continue;
     w.byColor[s.color] = (w.byColor[s.color] || 0) + 1;
-    if (s.kind === 'kraft') { const v = sessVolume(s); vol += v; w.vol += v; }
     if (s.kind === 'lauf') { km += s.run.km || 0; runSec += s.run.sec || 0; w.km += s.run.km || 0; }
     if (s.kind === 'boxen') { rounds += s.box.rounds || 0; w.rounds += s.box.rounds || 0; }
   }
@@ -1130,6 +1172,83 @@ function exerciseIndex(src) {
     }
   }
   return Object.values(map).sort((a, b) => b.n - a.n);
+}
+
+/* ---------- einfache Statistik: Fortschritt, Serien, Vergleich mit dem letzten Mal ---------- */
+const STAT_RANGES = [[4, '4 Wochen', 'in 4 Wochen'], [13, '3 Monate', 'in 3 Monaten'], [52, '1 Jahr', 'im letzten Jahr']];
+/* bester Satz einer Übung, bewertet als „Kraftwert“ (Gewicht und Wiederholungen zusammen) */
+function bestSetOf(e) { let set = null, v = 0; for (const st of (e && e.sets) || []) { const x = e1rm(loadOf(e, st.w), st.r); if (x > v) { v = x; set = st; } } return { set, v }; }
+/* Wochen am Stück mit mindestens einer Einheit; die laufende Woche zählt mit, sobald trainiert wurde */
+function weekStreak(src) {
+  const weeks = new Set(Object.values(src || {}).filter(Boolean).map(s => dkey(mondayOf(parseDkey(s.date)))));
+  let d = mondayOf(new Date()), n = 0;
+  if (!weeks.has(dkey(d))) d = addDays(d, -7);
+  while (weeks.has(dkey(d))) { n++; d = addDays(d, -7); }
+  return n;
+}
+/* pro Übung: Verlauf, aktueller Stand, Vergleich mit vor 4 Wochen, neue Rekorde */
+function exerciseProgress(src) {
+  const map = {};
+  for (const s of sortedSessions(src).slice().reverse()) {
+    if (s.kind !== 'kraft') continue;
+    for (const e of s.ex || []) {
+      const b = bestSetOf(e); if (!b.set) continue;
+      const m = map[e.id] || (map[e.id] = { id: e.id, name: e.name, bw: !!e.bw, pts: [], prs: [] });
+      const prevBest = m.pts.reduce((x, p) => Math.max(x, p.y), 0);
+      const p = { date: s.date, y: round2(b.v), set: b.set, bw: !!e.bw };
+      if (m.pts.length && p.y > prevBest + 0.01) m.prs.push(p.date);
+      m.pts.push(p); m.name = e.name;
+    }
+  }
+  const cut = dkey(addDays(new Date(), -28));
+  return Object.values(map).map(x => {
+    const last = x.pts[x.pts.length - 1];
+    let base = null; for (const p of x.pts) if (p.date <= cut) base = p;
+    if (!base && x.pts.length > 1) base = x.pts[0];
+    const trend = !base || base === last ? 'neu' : last.y > base.y * 1.02 ? 'up' : last.y < base.y * 0.98 ? 'down' : 'eq';
+    const best = x.pts.reduce((m, p) => (p.y > m.y ? p : m), x.pts[0]);
+    return { ...x, last, base, trend, best };
+  });
+}
+/* Gewicht in Worten, auch für Körpergewichtsübungen */
+const wlab = (bw, w) => (bw ? (w > 0 ? '+' + fmtKg(w) + ' kg' : 'Körpergewicht') : fmtKg(w || 0) + ' kg');
+/* Eintrag derselben Übung aus der Einheit davor (zeitlich vor s) */
+function prevEntryBefore(exId, s, src) {
+  const key = s.date + s.start;
+  for (const o of sortedSessions(src)) {
+    if (o.id === s.id || o.kind !== 'kraft' || o.date + o.start >= key) continue;
+    const e = (o.ex || []).find(x => x.id === exId);
+    if (e && e.sets && e.sets.length) return e;
+  }
+  return null;
+}
+/* Vergleich einer Übung mit dem letzten Mal: up / eq / down / neu, mit kurzem Text */
+function compareEx(e, p) {
+  if (!p) return { kind: 'neu', text: 'zum ersten Mal' };
+  const wa = Math.max(0, ...e.sets.map(x => x.w || 0)), wb = Math.max(0, ...p.sets.map(x => x.w || 0));
+  if (wa > wb) return { kind: 'up', text: wlab(e.bw, wb) + ' → ' + wlab(e.bw, wa) };
+  if (wa === wb) {
+    const reps = x => x.sets.filter(t => (t.w || 0) === wa).reduce((n, t) => n + (t.r || 0), 0), ra = reps(e), rb = reps(p);
+    if (ra > rb) return { kind: 'up', text: '+' + (ra - rb) + ' Wdh. bei ' + wlab(e.bw, wa) };
+    if (ra < rb) return { kind: 'down', text: (ra - rb) + ' Wdh. bei ' + wlab(e.bw, wa) };
+    return { kind: 'eq', text: 'gleich wie letztes Mal' };
+  }
+  const a = bestSetOf(e).v, b = bestSetOf(p).v;
+  return a > b * 1.01 ? { kind: 'up', text: 'mehr Wiederholungen mit weniger Gewicht' } : { kind: a < b * 0.99 ? 'down' : 'eq', text: wlab(e.bw, wb) + ' → ' + wlab(e.bw, wa) };
+}
+function compareSession(s, src) {
+  if (s.kind === 'kraft') return (s.ex || []).filter(e => e.sets && e.sets.length).map(e => ({ name: e.name, pr: e.sets.some(x => x.pr), ...compareEx(e, prevEntryBefore(e.id, s, src)) }));
+  const key = s.date + s.start, act = s.run && (s.run.act || 'Laufen');
+  const prev = sortedSessions(src).find(o => o.id !== s.id && o.kind === s.kind && o.date + o.start < key && (s.kind !== 'lauf' || (o.run && (o.run.act || 'Laufen') === act)));
+  if (!prev) return [];
+  if (s.kind === 'lauf') {
+    const out = [], v = x => (x.km > 0 && x.sec > 0 ? x.km / (x.sec / 3600) : 0), r = x => cardioRate(x);
+    if (v(s.run) > v(prev.run) * 1.01) out.push({ name: 'Schneller', kind: 'up', text: r(prev.run).main + ' → ' + r(s.run).main + ' ' + r(s.run).unit });
+    if ((s.run.km || 0) > (prev.run.km || 0) + 0.05) out.push({ name: 'Weiter', kind: 'up', text: fmt1(prev.run.km) + ' → ' + fmt1(s.run.km) + ' km' });
+    return out;
+  }
+  if (s.kind === 'boxen' && (s.box.rounds || 0) > (prev.box.rounds || 0)) return [{ name: 'Mehr Runden', kind: 'up', text: prev.box.rounds + ' → ' + s.box.rounds }];
+  return [];
 }
 
 /* ---------- example data (only shown, never saved) ---------- */
@@ -1344,8 +1463,6 @@ function Today() {
   const planned = plannedAll.filter(t => !doneSel.some(s => s.tpl === t.id));
   const plannedWeek = S.settings.week.reduce((n, a) => n + a.filter(id => tpl(id)).length, 0);
   const doneWeek = weekKeys.reduce((n, k) => n + (doneBy[k] || []).length, 0);
-  const wk = { vol: 0, km: 0, rounds: 0 };
-  weekKeys.forEach(k => (doneBy[k] || []).forEach(s => { if (s.kind === 'kraft') wk.vol += sessVolume(s); if (s.kind === 'lauf') wk.km += s.run.km || 0; if (s.kind === 'boxen') wk.rounds += s.box.rounds || 0; }));
   const ready = [];
   S.settings.templates.filter(t => t.kind === 'kraft').forEach(t => t.exercises.forEach(c => {
     const l = lastEntry(c.id); if (!l) return; const sg = suggest(c, l.sets);
@@ -1391,27 +1508,22 @@ function Today() {
       <div class="eyebrow"><span>Diese Woche</span><span class="data" style="letter-spacing:0">${doneWeek} / ${plannedWeek}</span></div>
       <div class="card stack" style="gap:12px">
         <div class="segbar" aria-hidden="true">${(() => { const cells = []; weekKeys.forEach((k, i) => { const d = doneBy[k] || [], p = (S.settings.week[i] || []).map(tpl).filter(Boolean); const n = Math.max(d.length, p.length); for (let j = 0; j < n; j++) { const s = d[j]; cells.push(html`<i class=${s ? 'on t-' + s.color : ''}></i>`); } }); return cells; })()}</div>
-        <div class="grid3">
-          <div><div class="eyebrow">Volumen</div><div class="data" style="font-size:17px;margin-top:3px">${fmt1(wk.vol / 1000)} t</div></div>
-          <div><div class="eyebrow">Ausdauer</div><div class="data" style="font-size:17px;margin-top:3px">${fmt1(wk.km)} km</div></div>
-          <div><div class="eyebrow">Kampfsport</div><div class="data" style="font-size:17px;margin-top:3px">${wk.rounds} Rd.</div></div>
-        </div>
+        <div class="small" style="margin:0">${plannedWeek && doneWeek >= plannedWeek ? html`<b class="good">Wochenziel geschafft.</b> Stark!` : plannedWeek ? html`Noch <b>${plannedWeek - doneWeek}</b> ${plannedWeek - doneWeek === 1 ? 'Training' : 'Trainings'} diese Woche geplant.` : html`<b>${doneWeek}</b> ${doneWeek === 1 ? 'Training' : 'Trainings'} diese Woche.`}</div>
       </div>
     </section>
 
-    <section class="sec" aria-label="Bereit zum Steigern">
-      <div class="eyebrow"><span>Bereit zum Steigern</span></div>
-      <div class="card">${ready.length ? html`<div class="list">${ready.map(({ t, c, sg }) => html`<div class=${'li t-' + t.color}>
-          <span class="disc sm"></span><span class="grow"><b class="h3" style="font-weight:600">${c.name}</b><div class="tiny faint">${t.name} · zuletzt alle Sätze bei ${c.hi}+ Wdh.</div></span>
-          <span class="r up">${c.bw ? (sg.prevW > 0 ? '+' + fmtKg(sg.prevW) : 'KG') : fmtKg(sg.prevW)} → ${c.bw ? '+' : ''}${fmtKg(sg.w)} kg</span></div>`)}</div>`
-        : html`<p class="small muted" style="margin:0">Hier erscheinen Übungen, sobald du in allen Sätzen das obere Ende des Wiederholungsbereichs schaffst. Dann ist das Gewicht dran.</p>`}</div>
-    </section>
+    ${ready.length ? html`<section class="sec" aria-label="Nächstes Mal mehr Gewicht">
+      <div class="eyebrow"><span>Nächstes Mal mehr Gewicht</span></div>
+      <div class="card"><div class="list">${ready.map(({ t, c, sg }) => html`<div class=${'li t-' + t.color}>
+          <span class="disc sm"></span><span class="grow"><b class="h3" style="font-weight:600">${c.name}</b><div class="tiny faint">${t.name}</div></span>
+          <span class="r good">${c.bw ? (sg.prevW > 0 ? '+' + fmtKg(sg.prevW) : 'KG') : fmtKg(sg.prevW)} → ${c.bw ? '+' : ''}${fmtKg(sg.w)} kg</span></div>`)}</div></div>
+    </section>` : null}
 
     ${last && html`<section class="sec" aria-label="Letzte Einheit">
       <div class="eyebrow"><span>Zuletzt</span><button class="link" onClick=${() => { S.tab = 'verlauf'; commit(); }}>Verlauf</button></div>
       <button class=${'card li t-' + last.color} style="padding:14px 16px" onClick=${() => { S.tab = 'verlauf'; S.openId = last.id; commit(); }}>
         <span class="disc"></span><span class="grow"><b class="h3">${last.name}</b><div class="tiny faint">${dateShort(last.date)}${sessMinutes(last) ? ' · ' + sessMinutes(last) + ' min' : ''}</div></span>
-        <span class="r">${sessMetric(last).main}<small>${sessMetric(last).sub}</small></span></button>
+        <span class=${'r hl' + (sessHighlight(last).good ? ' good' : '')}>${sessHighlight(last).main}</span></button>
     </section>`}
   </div>`;
 }
@@ -1525,6 +1637,7 @@ function KraftLog({ a }) {
 function ExCard({ a, e, ei, now }) {
   const [restOpen, setRestOpen] = useState(false);
   const [open, setOpen] = useState(false);
+  const [more, setMore] = useState(false);
   const allDone = e.sets.length > 0 && e.sets.every(s => s.done);
   if (allDone && !open && !quiet(a)) return html`<button id=${'ex-' + e.id} class="card ex-done" aria-expanded="false" onClick=${() => setOpen(true)}>
     <span class="okdot">${I.check}</span><span class="grow" style="min-width:0;text-align:left"><b class="h3">${e.name}</b><div class="tiny faint data" style="letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.sets.map(s => fmtSet(e.bw, s, false)).join(' · ')}</div></span>
@@ -1538,10 +1651,9 @@ function ExCard({ a, e, ei, now }) {
     ${now && html`<div class="eyebrow now-tag">Jetzt dran</div>`}
     ${allDone && open && !quiet(a) && html`<button class="link" style="align-self:flex-start" onClick=${() => setOpen(false)}>Einklappen</button>`}
     <div class="ex-title"><div class="grow"><div class="h3">${e.name}</div>
-      <div class="row wrap" style="gap:4px 8px;margin-top:4px"><span class="tiny faint data" style="letter-spacing:0">${e.sets.length} × ${e.lo}–${e.hi} · +${fmtKg(e.inc)} kg</span>
-        ${!quiet(a) && html`<button class="restchip" aria-expanded=${restOpen ? 'true' : 'false'} onClick=${() => setRestOpen(!restOpen)}>Pause ${fmtDur(restFor(e, a))}${auto ? ' · auto' : ''}</button>`}
-        <button class="restchip" aria-pressed=${e.uni ? 'true' : 'false'} title="Wiederholungen für links und rechts getrennt" onClick=${() => setExUni(e, !e.uni)}>Einarmig</button>
-        <button class="restchip" aria-pressed=${e.amrap ? 'true' : 'false'} title="Letzter Satz bis zum Muskelversagen (AMRAP)" onClick=${() => setExAmrap(e, !e.amrap)}>Letzter Satz: max</button></div></div>
+      <div class="row wrap" style="gap:4px 8px;margin-top:4px"><span class="tiny faint data" style="letter-spacing:0">${e.sets.length} × ${e.lo}–${e.hi} Wdh.</span>
+        ${!quiet(a) && html`<button class="restchip" aria-expanded=${restOpen ? 'true' : 'false'} onClick=${() => setRestOpen(!restOpen)}>Pause ${fmtDur(restFor(e, a))}</button>`}
+        ${e.uni && html`<span class="tag">einarmig</span>`}${e.amrap && html`<span class="tag">letzter Satz max</span>`}</div></div>
       ${e.bar && html`<button class="btn sm ghost" onClick=${() => { const w = (e.sets.find(s => !s.done) || e.sets[0]).w; S.sheet = { type: 'plates', w: w || S.settings.prefs.bar }; commit(); }}>Scheiben</button>`}
     </div>
     ${restOpen && !quiet(a) && html`<div class="card flat stack" style="gap:8px;padding:12px">
@@ -1551,9 +1663,9 @@ function ExCard({ a, e, ei, now }) {
               <button class="btn sm" style="align-self:flex-start" onClick=${() => resetExRest(e)}>Empfehlung übernehmen</button>`
             : html`<p class="tiny faint" style="margin:0">Empfehlung: ${restExplain(e, a)}. Änderst du sie, gilt das auch in deinem Plan.</p>`}`}
     </div>`}
-    ${e.dropTip && !e.dropTip.done && !quiet(a) && html`<div class="sug low">${I.alert}<span>Deine Wiederholungen fallen stark ab (${e.dropTip.from} → ${e.dropTip.to}). Eine längere Pause hilft meist, damit du mehr Wiederholungen schaffst.</span></div>
+    ${e.dropTip && !e.dropTip.done && !quiet(a) && html`<div class="sug low">${I.alert}<span>Starker Abfall (${e.dropTip.from} → ${e.dropTip.to} Wdh.). Mehr Pause hilft meistens.</span></div>
       <div class="row wrap" style="gap:8px"><button class="btn sm" onClick=${() => { setExRest(e, restFor(e, a) + 30); e.dropTip.done = true; touch(); }}>+0:30 Pause für diese Übung</button><button class="btn sm ghost" onClick=${() => { e.dropTip.done = true; touch(); }}>Passt so</button></div>`}
-    ${e.sug && html`<div class=${'sug ' + e.sug.mode}>${sugIcon}<span>${e.sug.text}${e.uni ? ' Gezählt wird der schwächere Arm.' : ''}${e.sets.some(s => s.f && !s.done) ? ' Satz mit MAX: so viele saubere Wiederholungen wie möglich.' : ''}</span></div>`}
+    ${e.sug && html`<div class=${'sug ' + e.sug.mode}>${sugIcon}<span>${e.sug.text}${e.uni ? ' Es zählt der schwächere Arm.' : ''}</span></div>`}
     <div class="sets">
       <div class=${'set head' + (e.uni ? ' uni' : '')} aria-hidden="true"><span></span><span>Vorher</span><span>${e.bw ? '+kg' : 'kg'}</span>${e.uni ? html`<span>Links</span><span>Rechts</span>` : html`<span>Wdh</span>`}<span></span></div>
       ${e.sets.map((s, si) => html`<div class=${'set' + (e.uni ? ' uni' : '') + (s.done ? ' done' : '')} key=${si}>
@@ -1573,8 +1685,13 @@ function ExCard({ a, e, ei, now }) {
       <button class="btn sm ghost" disabled=${e.sets.length < 2} onClick=${() => removeSet(ei)}>− Satz</button>
       ${a.log && e.sets.some(s => !s.done) && html`<button class="btn sm" onClick=${() => fillTargets(ei)}>Ziel übernehmen</button>`}
       <span class="grow"></span>
-      <${Confirm} label="Entfernen" yes="Übung entfernen" onYes=${() => removeExercise(ei)} />
+      <button class="btn sm ghost" aria-expanded=${more ? 'true' : 'false'} onClick=${() => setMore(!more)}>${more ? 'Weniger' : 'Mehr'}</button>
     </div>
+    ${more && html`<div class="card flat stack" style="gap:2px;padding:6px 12px">
+      <${Toggle} on=${!!e.uni} label="Einarmig" hint="Wiederholungen für links und rechts getrennt" onChange=${v => setExUni(e, v)} />
+      <hr class="hr" /><${Toggle} on=${!!e.amrap} label="Letzter Satz bis zum Maximum" hint="So viele saubere Wiederholungen wie möglich" onChange=${v => setExAmrap(e, v)} />
+      <hr class="hr" /><div class="row between" style="padding:8px 0"><span class="small muted">Nur heute weglassen</span><${Confirm} label="Übung entfernen" yes="Entfernen" onYes=${() => removeExercise(ei)} /></div>
+    </div>`}
   </div>`;
 }
 function RestDock() {
@@ -1680,23 +1797,21 @@ function RunLog({ a }) {
 /* ---------- sheets ---------- */
 function FinishSheet({ onClose }) {
   const a = S.active, err = validateActive(a);
-  const vol = a.kind === 'kraft' ? a.ex.reduce((v, e) => v + e.sets.filter(s => s.done).reduce((x, s) => x + loadOf(e, s.w) * (e.uni ? (s.rl != null ? s.rl : s.r || 0) + (s.rr != null ? s.rr : s.r || 0) : s.r || 0), 0), 0) : 0;
   const sets = a.kind === 'kraft' ? a.ex.reduce((n, e) => n + e.sets.filter(s => s.done).length, 0) : 0;
   const prs = a.kind === 'kraft' ? a.ex.reduce((n, e) => n + e.sets.filter(s => s.done && s.pr).length, 0) : 0;
   const mins = shownDur(a);
   return html`<${Sheet} onClose=${onClose} label="Einheit abschließen">
     <h2 class="h2">${a.editing ? 'Änderungen speichern' : a.log ? 'Einheit nachtragen' : 'Einheit abschließen'}</h2>
-    ${a.kind === 'kraft' && html`<div class="grid3">
+    ${a.kind === 'kraft' && html`<div class="grid2">
       <div class="tile"><span class="eyebrow">Sätze</span><b>${sets}</b></div>
-      <div class="tile"><span class="eyebrow">Volumen</span><b>${fmt1(vol / 1000)}<small>t</small></b></div>
-      <div class="tile"><span class="eyebrow">Rekorde</span><b>${prs}</b></div></div>`}
+      <div class="tile"><span class="eyebrow">Rekorde</span><b class=${prs ? 'good' : ''}>${prs}</b></div></div>`}
     <label class="field"><span>Datum</span><input id="finish-date" type="date" class="inp" value=${a.date} max=${dkey(new Date())} onChange=${e => setDate(e.target.value)} /></label>
     <div class="grid2">
       <label class="field"><span>Beginn</span><input id="finish-time" type="time" class="inp" value=${timeOf(a.start)} onChange=${e => setStartTime(e.target.value)} /></label>
       <label class="field"><span>Dauer (Min.)</span><${Stepper} label="Dauer in Minuten" value=${mins} min=${5} max=${300} step=${5} onChange=${v => { a.durMin = v; touch(); }} /></label>
     </div>
     ${!quiet(a) && a.durMin == null && html`<p class="tiny faint" style="margin:-6px 0 0">Die Dauer läuft mit, bis du speicherst. Passt sie nicht, stell sie hier ein.</p>`}
-    ${a.kind === 'kraft' && html`<label class="field"><span>Wie hart war's? (RPE)</span><${RPE} value=${a.rpe} onChange=${v => { a.rpe = v; touch(); }} /></label>`}
+    ${a.kind === 'kraft' && html`<label class="field"><span>Wie anstrengend war's? (1 = locker, 10 = am Limit)</span><${RPE} value=${a.rpe} onChange=${v => { a.rpe = v; touch(); }} /></label>`}
     ${err && html`<div class="sug low">${I.alert}<span>${err}</span></div>`}
     <button class="btn primary block" disabled=${!!err} onClick=${finishSession}>Speichern</button>
     <div class="row between wrap">
@@ -1707,17 +1822,24 @@ function FinishSheet({ onClose }) {
 }
 function SummarySheet({ sh, onClose }) {
   const s = S.sessions[sh.id]; if (!s) return null;
-  const m = sessMetric(s), min = sessMinutes(s);
+  const min = sessMinutes(s), cmp = compareSession(s);
+  const up = cmp.filter(x => x.kind === 'up'), first = cmp.filter(x => x.kind === 'neu'), same = cmp.filter(x => x.kind === 'eq' || x.kind === 'down');
+  const prs = s.kind === 'kraft' ? (s.ex || []).filter(e => (e.sets || []).some(x => x.pr)).length : 0;
+  const hasPrev = s.kind === 'kraft' ? cmp.some(x => x.kind !== 'neu') : sortedSessions().some(o => o.id !== s.id && o.kind === s.kind && o.date + o.start < s.date + s.start);
+  const tiles = s.kind === 'kraft' ? [['Dauer', min ? min + ' min' : '–'], ['Sätze', String(sessSets(s))], ['Rekorde', String(prs), prs > 0]]
+    : s.kind === 'lauf' ? [['Dauer', fmtDur(s.run.sec)], ['Strecke', fmt1(s.run.km) + ' km'], [actSpeed(s.run.act || 'Laufen') ? 'Tempo' : 'Pace', cardioRate(s.run).main + ' ' + cardioRate(s.run).unit]]
+    : [['Dauer', min ? min + ' min' : '–'], ['Runden', String(s.box.rounds || 0)], ['Art', s.box.art || '–']];
   return html`<${Sheet} onClose=${onClose} label="Gespeichert">
     <div class=${'row t-' + s.color}><span class="disc lg"></span><div class="grow"><div class="eyebrow">${sh.edited ? 'Aktualisiert' : 'Gespeichert'} · ${dateShort(s.date)}</div><div class="h1" style="font-size:40px">${s.name}</div></div></div>
-    <div class="grid3">
-      <div class="tile"><span class="eyebrow">${s.kind === 'kraft' ? 'Volumen' : s.kind === 'lauf' ? 'Distanz' : 'Runden'}</span><b style="font-size:21px">${m.main}</b></div>
-      <div class="tile"><span class="eyebrow">${s.kind === 'kraft' ? 'Sätze' : s.kind === 'lauf' ? 'Tempo' : 'Art'}</span><b style="font-size:21px">${m.sub}</b></div>
-      <div class="tile"><span class="eyebrow">Dauer</span><b style="font-size:21px">${min ? min + ' min' : '–'}</b></div>
+    <div class="grid3">${tiles.map(([l, v, g]) => html`<div class="tile"><span class="eyebrow">${l}</span><b class=${g ? 'good' : ''} style="font-size:21px">${v}</b></div>`)}</div>
+    <div class="card flat stack" style="gap:8px"><div class="eyebrow">Im Vergleich zum letzten Mal</div>
+      ${up.length ? up.map(x => html`<div class="row between small" style="gap:10px;align-items:baseline"><span style="min-width:0">${x.name}${x.pr ? html` <span class="pr">Rekord</span>` : null}</span><span class="good" style="text-align:right;white-space:nowrap">▲ ${x.text}</span></div>`)
+        : html`<p class="small" style="margin:0">${hasPrev ? 'Diesmal kein Plus, das ist normal. Dranbleiben zahlt sich aus.' : 'Deine erste Einheit dieser Art. Ab dem nächsten Mal siehst du hier, was besser geworden ist.'}</p>`}
+      ${up.length && same.length ? html`<div class="tiny faint">Gleich oder etwas weniger: ${same.map(x => x.name).join(', ')}</div>` : null}
+      ${hasPrev && first.length ? html`<div class="tiny faint">Zum ersten Mal: ${first.map(x => x.name).join(', ')}</div>` : null}
     </div>
-    ${sh.prs && sh.prs.length ? html`<div class="sug up">${I.up}<span><b>Neue Rekorde:</b> ${sh.prs.join(', ')}</span></div>` : null}
     ${sh.nextUp && sh.nextUp.length ? html`<div class="card flat stack" style="gap:6px"><div class="eyebrow">Nächstes Mal mehr Gewicht</div>
-      ${sh.nextUp.map(x => html`<div class="row between small"><span>${x.name}</span><span class="data up">${x.bw ? (x.from > 0 ? '+' + fmtKg(x.from) : 'KG') : fmtKg(x.from)} → ${x.bw ? '+' : ''}${fmtKg(x.to)} kg</span></div>`)}</div>` : null}
+      ${sh.nextUp.map(x => html`<div class="row between small"><span>${x.name}</span><span class="data good">${x.bw ? (x.from > 0 ? '+' + fmtKg(x.from) : 'KG') : fmtKg(x.from)} → ${x.bw ? '+' : ''}${fmtKg(x.to)} kg</span></div>`)}</div>` : null}
     <button class="btn primary block" onClick=${onClose}>Fertig</button>
   </${Sheet}>`;
 }
@@ -2008,14 +2130,13 @@ function HistoryView() {
       <button class="btn primary" onClick=${() => { S.tab = 'heute'; commit(); }}>Zum heutigen Training</button></div>`}
     ${groups.map(g => {
       const d = parseDkey(g.key), e = addDays(d, 6);
-      const vol = g.items.reduce((v, s) => v + (s.kind === 'kraft' ? sessVolume(s) : 0), 0);
       return html`<section class="stack" style="gap:8px" key=${g.key}>
-        <div class="eyebrow row between"><span>KW ${isoWeek(d)} · ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.–${pad2(e.getDate())}.${pad2(e.getMonth() + 1)}.</span><span>${g.items.length} Einh.${vol ? ' · ' + fmt1(vol / 1000) + ' t' : ''}</span></div>
+        <div class="eyebrow row between"><span>${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.–${pad2(e.getDate())}.${pad2(e.getMonth() + 1)}.</span><span>${g.items.length} ${g.items.length === 1 ? 'Training' : 'Trainings'}</span></div>
         <div class="card" style="padding:4px 16px">
           ${g.items.map(s => html`<div id=${'h-' + s.id} key=${s.id}>
             <button class=${'li t-' + s.color} aria-expanded=${open === s.id ? 'true' : 'false'} onClick=${() => setOpen(open === s.id ? null : s.id)}>
-              <span class="disc"></span><span class="grow"><b class="h3">${s.name}</b><div class="tiny faint">${dateShort(s.date)}${sessMinutes(s) ? ' · ' + sessMinutes(s) + ' min' : ''}${s.rpe || s.box?.rpe || s.run?.rpe ? ' · RPE ' + (s.rpe || s.box?.rpe || s.run?.rpe) : ''}</div></span>
-              <span class="r">${sessMetric(s).main}<small>${sessMetric(s).sub}</small></span></button>
+              <span class="disc"></span><span class="grow"><b class="h3">${s.name}</b><div class="tiny faint">${dateShort(s.date)}${sessMinutes(s) ? ' · ' + sessMinutes(s) + ' min' : ''}</div></span>
+              <span class=${'r hl' + (sessHighlight(s).good ? ' good' : '')}>${sessHighlight(s).main}</span></button>
             ${open === s.id && html`<${SessionDetail} s=${s} />`}
           </div>`)}
         </div></section>`;
@@ -2023,9 +2144,10 @@ function HistoryView() {
   </div>`;
 }
 function SessionDetail({ s }) {
+  const cmp = s.kind === 'kraft' ? compareSession(s) : [];
   return html`<div class=${'stack t-' + s.color} style="gap:10px;padding:2px 0 16px">
-    ${s.kind === 'kraft' && html`<table><tbody>${s.ex.map(e => html`<tr><td style="white-space:normal;padding-left:0">${e.name}${e.sets.some(x => x.pr) ? html` <span class="pr">PR</span>` : ''}</td>
-      <td class="n" style="white-space:normal;padding-right:0">${e.sets.map(x => fmtSet(e.bw, x)).join('  ')}</td></tr>`)}</tbody></table>`}
+    ${s.kind === 'kraft' && html`<table><tbody>${s.ex.map((e, i) => { const c = cmp.find(x => x.name === e.name); return html`<tr><td style="white-space:normal;padding-left:0">${e.name}${e.sets.some(x => x.pr) ? html` <span class="pr">Rekord</span>` : ''}${c && c.kind === 'up' ? html`<div class="tiny good">▲ ${c.text}</div>` : null}</td>
+      <td class="n" style="white-space:normal;padding-right:0">${e.sets.map(x => fmtSet(e.bw, x)).join('  ')}</td></tr>`; })}</tbody></table>`}
     ${s.kind === 'boxen' && html`<div class="meta"><span>${s.box.art}</span><span><b>${s.box.rounds} × ${fmtDur(s.box.round)}</b></span><span>Pause <b>${fmtDur(s.box.rest)}</b></span></div>`}
     ${s.kind === 'lauf' && html`<div class="meta"><span>${s.run.act || 'Laufen'} · ${s.run.art}</span><span><b>${fmt1(s.run.km)} km</b></span><span><b>${fmtDur(s.run.sec)}</b></span><span><b>${cardioRate(s.run).main}</b> ${cardioRate(s.run).unit}</span>${s.run.hr ? html`<span><b>${s.run.hr}</b> bpm</span>` : null}</div>`}
     ${s.kind === 'lauf' && s.run.track && html`<${RouteSvg} pts=${s.run.track} h=${150} /><${SplitsTable} splits=${s.run.splits} act=${s.run.act || 'Laufen'} />`}
@@ -2056,9 +2178,10 @@ function colorName(c) { const n = S.settings.templates.filter(t => t.color === c
 function Columns({ cols, keys, fmt = v => fmt1(v), unit = '', h = 170, label }) {
   const [ref, w] = useWidth(); const [hi, setHi] = useState(null);
   const L = 30, R = 6, T = 16, B = 22, pw = w - L - R, ph = h - T - B, n = cols.length;
-  const max = Math.max(0, ...cols.map(c => c.total)); const ticks = ticksFor(0, max || 1, 3); const top = ticks[ticks.length - 1];
+  const max = Math.max(0, ...cols.map(c => c.total)), ist = fmt === fmtInt ? Math.max(1, Math.ceil((max || 1) / 3)) : 0;
+  const ticks = ist ? Array.from({ length: Math.ceil((max || 1) / ist) + 1 }, (_, i) => i * ist) : ticksFor(0, max || 1, 3); const top = ticks[ticks.length - 1];
   const band = pw / n, bw = Math.max(3, Math.min(24, band * 0.64)), y = v => T + ph - (v / top) * ph;
-  const every = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(pw / 38))));
+  const every = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(pw / 48))));
   const pick = ev => { const r = ref.current.getBoundingClientRect(); const i = Math.floor((ev.clientX - r.left - L) / band); setHi(i >= 0 && i < n ? i : null); };
   const tipX = hi == null ? 0 : Math.min(Math.max(L + band * hi + band / 2, 70), w - 70);
   return html`<div class="chart" ref=${ref}>
@@ -2084,9 +2207,9 @@ function Columns({ cols, keys, fmt = v => fmt1(v), unit = '', h = 170, label }) 
     </div>`}
   </div>`;
 }
-function LineChart({ pts, color, fmt = fmt1, unit = '', h = 190, label }) {
+function LineChart({ pts, color, fmt = fmt1, unit = '', h = 190, label, setLabel }) {
   const [ref, w] = useWidth(); const [hi, setHi] = useState(null);
-  const L = 36, R = 54, T = 14, B = 22, pw = w - L - R, ph = h - T - B;
+  const L = setLabel ? 10 : 36, R = setLabel ? 78 : 54, T = 14, B = 22, pw = w - L - R, ph = h - T - B;
   const xs = pts.map(p => parseDkey(p.date).getTime()), x0 = Math.min(...xs), x1 = Math.max(...xs);
   const ys = pts.map(p => p.y), mn = Math.min(...ys), mx = Math.max(...ys);
   const ticks = ticksFor(mn - (mx - mn) * 0.15 - 0.5, mx + (mx - mn) * 0.1 + 0.5, 3); const lo = ticks[0], top = ticks[ticks.length - 1];
@@ -2101,54 +2224,23 @@ function LineChart({ pts, color, fmt = fmt1, unit = '', h = 190, label }) {
     <svg width=${w} height=${h} viewBox=${`0 0 ${w} ${h}`} role="img" aria-label=${label} tabindex="0"
       onPointerMove=${pick} onPointerDown=${pick} onPointerLeave=${() => setHi(null)} onBlur=${() => setHi(null)}
       onKeyDown=${e => { if (e.key === 'ArrowRight') setHi(Math.min(P.length - 1, (hi == null ? -1 : hi) + 1)); if (e.key === 'ArrowLeft') setHi(Math.max(0, (hi == null ? P.length : hi) - 1)); }}>
-      ${ticks.map(t => html`<g><line class="grid" x1=${L} x2=${w - R + 8} y1=${Y(t)} y2=${Y(t)}/><text x=${L - 6} y=${Y(t) + 3.5} text-anchor="end">${fmtInt(t)}</text></g>`)}
+      ${ticks.map(t => html`<g><line class="grid" x1=${L} x2=${w - R + 8} y1=${Y(t)} y2=${Y(t)}/>${setLabel ? null : html`<text x=${L - 6} y=${Y(t) + 3.5} text-anchor="end">${fmtInt(t)}</text>`}</g>`)}
       ${area && html`<path d=${area} fill="var(--c)" fill-opacity="0.1"/>`}
       <path d=${line} fill="none" stroke="var(--c)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
       ${P.length <= 24 && P.slice(0, -1).map(q => html`<circle cx=${q[0]} cy=${q[1]} r="3" fill="var(--c)" stroke="var(--surface)" stroke-width="2"/>`)}
       <circle cx=${last[0]} cy=${last[1]} r="5" fill="var(--c)" stroke="var(--surface)" stroke-width="2"/>
-      <text class="lbl" x=${last[0] + 9} y=${last[1] + 4}>${fmt(lp.y)}${unit}</text>
+      <text class="lbl" x=${last[0] + 9} y=${last[1] + 4}>${setLabel ? setLabel(lp) : fmt(lp.y) + unit}</text>
       <text x=${L} y=${h - 6} text-anchor="start">${fd(pts[0].date)}</text>
       ${pts.length > 1 && html`<text x=${w - R} y=${h - 6} text-anchor="end">${fd(lp.date)}</text>`}
       ${hi != null && html`<line x1=${P[hi][0]} x2=${P[hi][0]} y1=${T} y2=${T + ph} stroke="var(--ink-3)" stroke-width="1"/><circle cx=${P[hi][0]} cy=${P[hi][1]} r="5" fill="var(--c)" stroke="var(--surface)" stroke-width="2"/>`}
     </svg>
     ${hi != null && html`<div class="tip" style=${`left:${Math.min(Math.max(P[hi][0], 70), w - 70)}px`}>
       <div class="tiny" style="opacity:.75">${dateShort(pts[hi].date)}</div>
-      <div><span class="k"></span><b>${fmt(pts[hi].y)}${unit}</b> 1RM geschätzt</div>
-      ${pts[hi].set && html`<div class="tiny">bester Satz ${pts[hi].bw && !pts[hi].set.w ? 'KG' : fmtKg(pts[hi].set.w) + ' kg'} × ${pts[hi].set.r}</div>`}
-    </div>`}
-  </div>`;
-}
-function Heatmap({ src, from, n }) {
-  const [ref, w] = useWidth(); const [hi, setHi] = useState(null);
-  const L = 22, gap = n > 30 ? 1.5 : 3, cell = Math.max(3, Math.min(22, (w - L) / n - gap)), h = 7 * (cell + gap) + 18;
-  const byDay = {}; for (const s of sortedSessions(src)) (byDay[s.date] = byDay[s.date] || []).push(s);
-  const today = dkey(new Date()), cells = [];
-  for (let wk = 0; wk < n; wk++) for (let d = 0; d < 7; d++) {
-    const day = addDays(from, wk * 7 + d), k = dkey(day), x = L + wk * (cell + gap), y = d * (cell + gap), ss = byDay[k] || [], fut = k > today;
-    let shape;
-    if (!ss.length) shape = html`<rect x=${x} y=${y} width=${cell} height=${cell} rx="2" fill=${fut ? 'none' : 'var(--surface-2)'} stroke=${k === today ? 'var(--ink)' : 'var(--line-2)'} stroke-width="1"/>`;
-    else if (ss.length === 1) shape = html`<rect x=${x} y=${y} width=${cell} height=${cell} rx="2" fill=${'var(--' + ss[0].color + ')'}/>`;
-    else shape = html`<g><path d=${`M${x},${y}H${x + cell}L${x},${y + cell}Z`} fill=${'var(--' + ss[0].color + ')'}/><path d=${`M${x + cell},${y}V${y + cell}H${x}Z`} fill=${'var(--' + ss[1].color + ')'}/></g>`;
-    cells.push(html`<g opacity=${hi && hi.k !== k ? 0.55 : 1} onPointerDown=${() => setHi({ k, x: x + cell / 2, y, ss })} onPointerEnter=${() => setHi({ k, x: x + cell / 2, y, ss })}>${shape}</g>`);
-  }
-  return html`<div class="chart" ref=${ref} onPointerLeave=${() => setHi(null)}>
-    <svg width=${w} height=${h} viewBox=${`0 0 ${w} ${h}`} role="img" aria-label="Trainingstage als Kalender">
-      ${['Mo', '', 'Mi', '', 'Fr', '', 'So'].map((t, d) => t && html`<text x="0" y=${d * (cell + gap) + cell / 2 + 3.5}>${t}</text>`)}
-      ${cells}
-      ${Array.from({ length: n }, (_, wk) => { const d = addDays(from, wk * 7); return (wk % Math.max(1, Math.ceil(n / 6)) === 0) && html`<text x=${L + wk * (cell + gap)} y=${h - 3}>${d.getDate() <= 7 || wk === 0 ? MON_L[d.getMonth()].slice(0, 3) : ''}</text>`; })}
-    </svg>
-    ${hi && html`<div class="tip" style=${`left:${Math.min(Math.max(hi.x, 70), w - 70)}px;top:${hi.y + cell + 8}px`}>
-      <div class="tiny" style="opacity:.75">${dateShort(hi.k)}</div>
-      ${hi.ss.length ? hi.ss.map(s => html`<div class=${'t-' + s.color}><span class="k"></span><b>${s.name}</b> ${sessMetric(s).main}</div>`) : html`<div>Kein Training</div>`}
+      ${setLabel ? html`<div><span class="k"></span><b>${setLabel(pts[hi])}</b> bester Satz</div>` : html`<div><span class="k"></span><b>${fmt(pts[hi].y)}${unit}</b></div>`}
     </div>`}
   </div>`;
 }
 function Legend({ keys }) { return html`<div class="legend">${keys.map(k => html`<span class=${'t-' + k}><i></i>${colorName(k)}</span>`)}</div>`; }
-function DataTable({ head, rows }) {
-  return html`<details class="tbl"><summary>Werte als Tabelle</summary><div class="tablewrap"><table>
-    <thead><tr>${head.map((h, i) => html`<th class=${i ? 'n' : ''}>${h}</th>`)}</tr></thead>
-    <tbody>${rows.map(r => html`<tr>${r.map((c, i) => html`<td class=${i ? 'n' : ''}>${c}</td>`)}</tr>`)}</tbody></table></div></details>`;
-}
 
 
 /* ---------- first start: plan setup ---------- */
@@ -2287,79 +2379,92 @@ function LogPickSheet({ sh, onClose }) {
 
 
 /* ---------- statistics ---------- */
+/* kleines ⓘ: ein Satz Erklärung zum Aufklappen */
+function Info({ text }) { return html`<details class="info"><summary aria-label="Erklärung">i</summary><p>${text}</p></details>`; }
+const TREND = { up: ['▲', 'besser', 'up'], eq: ['●', 'gleich', 'eq'], down: ['▼', 'weniger', 'down'], neu: ['○', 'neu', 'eq'] };
 function Stats() {
-  const [range, setRange] = useState(() => Number(lsGet('formkurve.range')) || 12);
-  const [exSel, setExSel] = useState(null);
-  const [actSel, setActSel] = useState(null);
+  const [range, setRange] = useState(() => { const r = Number(lsGet('formkurve.range')); return STAT_RANGES.some(x => x[0] === r) ? r : 4; });
+  const [openEx, setOpenEx] = useState(null);
   const src = S.demo || S.sessions;
   if (!Object.keys(src).length) return html`<div class="stack"><h1 class="h1" style="font-size:40px;margin-top:4px">Statistik</h1>
     <div class="card empty"><div class="h2">Noch keine Daten</div>
-      <p class="small muted" style="margin:0;max-width:36ch">Nach deinen ersten Einheiten siehst du hier Konstanz, Wochenpensum, Kraftkurven pro Übung, Kilometer, Runden und Rekorde.</p>
-      <button class="btn primary" onClick=${() => { S.demo = makeDemo(); commit(); }}>Beispielansicht zeigen</button></div></div>`;
-  const st = computeStats(src, range);
-  const exIdx = exerciseIndex(src);
-  const exId = exSel && exIdx.some(x => x.id === exSel) ? exSel : exIdx[0] && exIdx[0].id;
-  const exInfo = exIdx.find(x => x.id === exId);
-  const series = exId ? exerciseSeries(src, exId).filter(p => p.date >= dkey(st.from)) : [];
-  const exColor = (() => { for (const s of sortedSessions(src)) if (s.kind === 'kraft' && (s.ex || []).some(e => e.id === exId)) return s.color; return 'push'; })();
+      <p class="small muted" style="margin:0;max-width:36ch">Nach deinen ersten Einheiten siehst du hier, ob du stärker wirst.</p>
+      <button class="btn primary" onClick=${() => { S.demo = makeDemo(); commit(); }}>Beispiel ansehen</button></div></div>`;
+  const R = STAT_RANGES.find(x => x[0] === range);
+  const st = computeStats(src, range), fromKey = dkey(st.from);
+  // Kennzahlen
+  const mon = mondayOf(new Date()), wk0 = dkey(mon), wk6 = dkey(addDays(mon, 6));
+  const doneWeek = Object.values(src).filter(x => x && x.date >= wk0 && x.date <= wk6).length;
+  const plannedWeek = S.settings.week.reduce((n, a) => n + a.filter(id => tpl(id)).length, 0);
+  const streak = weekStreak(src);
+  const prog = exerciseProgress(src);
+  const prCount = prog.reduce((n, x) => n + x.prs.filter(d => d >= fromKey).length, 0);
+  // Übungen nach Einheit gruppiert, nur was im Zeitraum trainiert wurde
+  const shown = prog.filter(x => x.last.date >= fromKey), seen = new Set(), groups = [];
+  S.settings.templates.filter(t => t.kind === 'kraft').forEach(t => {
+    const items = t.exercises.map(c => shown.find(x => x.id === c.id)).filter(x => x && !seen.has(x.id));
+    items.forEach(x => seen.add(x.id)); if (items.length) groups.push({ name: t.name, color: t.color, items });
+  });
+  const rest = shown.filter(x => !seen.has(x.id)); if (rest.length) groups.push({ name: 'Weitere', color: 'push', items: rest });
+  // Wochen-Diagramm
   const keys = COLORS.filter(k => st.weeks.some(w => w.byColor[k] > 0));
-  const cols = st.weeks.map(w => ({ label: String(w.kw), tip: 'KW ' + w.kw, parts: w.byColor, total: keys.reduce((n, k) => n + (w.byColor[k] || 0), 0) }));
-  const runs = st.list.filter(s => s.kind === 'lauf'), fights = st.list.filter(s => s.kind === 'boxen');
-  const acts = [...new Set(runs.map(s => s.run.act || 'Laufen'))];
-  const act = actSel && acts.includes(actSel) ? actSel : acts[0];
-  const actRuns = runs.filter(s => (s.run.act || 'Laufen') === act);
-  const actWeeks = st.weeks.map(() => 0); actRuns.forEach(s => { const i = weekIndex(s, st.from); if (actWeeks[i] != null) actWeeks[i] += s.run.km || 0; });
-  const actColor = (actRuns[0] && actRuns[0].color) || 'run';
-  const bestPace = actRuns.filter(s => s.run.km >= 3).reduce((m, s) => Math.min(m, s.run.sec / s.run.km || 1e9), 1e9);
-  const bestRate = bestPace < 1e9 ? cardioRate({ act, km: 1, sec: bestPace }) : null;
-  const fightColor = (fights[0] && fights[0].color) || 'box';
-  const delta = series.length > 1 ? (series[series.length - 1].y - series[0].y) / series[0].y : null;
+  const cols = st.weeks.map(w => ({ label: pad2(w.d.getDate()) + '.' + pad2(w.d.getMonth() + 1) + '.', tip: 'Woche ab ' + pad2(w.d.getDate()) + '.' + pad2(w.d.getMonth() + 1) + '.', parts: w.byColor, total: keys.reduce((n, k) => n + (w.byColor[k] || 0), 0) }));
+  // Ausdauer und Kampfsport nur mit Daten
+  const runs = st.list.filter(x => x.kind === 'lauf'), fights = st.list.filter(x => x.kind === 'boxen');
+  const acts = [...new Set(runs.map(x => x.run.act || 'Laufen'))];
   const setR = r => { setRange(r); lsSet('formkurve.range', String(r)); };
   return html`<div class="stack">
     <h1 class="h1" style="font-size:40px;margin-top:4px">Statistik</h1>
-    <div class="seg" role="group" aria-label="Zeitraum">${[[4, '4 Wochen'], [12, '12 Wochen'], [52, '1 Jahr']].map(([r, l]) => html`<button class=${range === r ? 'on' : ''} aria-pressed=${range === r ? 'true' : 'false'} onClick=${() => setR(r)}>${l}</button>`)}</div>
-    ${S.demo && html`<div class="banner"><span><b>Beispieldaten.</b> Nicht deine Werte, nichts davon wird gespeichert.</span><button class="btn sm" onClick=${() => { S.demo = null; commit(); }}>Ausblenden</button></div>`}
-    <div class="tiles">
-      <div class="tile"><span class="eyebrow">Einheiten</span><b>${st.count}</b><span class="tiny faint">Ø ${fmt1(st.perWeek)} pro Woche</span></div>
-      <div class="tile"><span class="eyebrow">Volumen Kraft</span><b>${fmt1(st.vol / 1000)}<small>t</small></b><span class="tiny faint">Gewicht × Wiederholungen</span></div>
-      <div class="tile"><span class="eyebrow">Ausdauer</span><b>${fmt1(st.km)}<small>km</small></b><span class="tiny faint">${runs.length} Einheiten · ${fmtMin(st.runSec)}</span></div>
-      <div class="tile"><span class="eyebrow">Kampfsport</span><b>${st.rounds}<small>Runden</small></b><span class="tiny faint">${fmtInt(fights.reduce((n, s) => n + (s.box.rounds || 0) * (s.box.round || 0), 0) / 60)} min Rundenzeit</span></div>
+    ${S.demo && html`<div class="banner"><span><b>Beispieldaten.</b> Nicht deine Werte.</span><button class="btn sm" onClick=${() => { S.demo = null; commit(); }}>Ausblenden</button></div>`}
+    <div class="tiles three">
+      <div class="tile"><span class="eyebrow">Diese Woche</span><b>${doneWeek}${plannedWeek ? html`<small>/ ${plannedWeek}</small>` : null}</b><span class="tiny faint">Einheiten</span></div>
+      <div class="tile"><span class="eyebrow">Am Stück</span><b>${streak}</b><span class="tiny faint">${streak === 1 ? 'Woche' : 'Wochen'} mit Training</span></div>
+      <div class="tile"><span class="eyebrow">Rekorde</span><b class=${prCount ? 'good' : ''}>${prCount}</b><span class="tiny faint">${R[2]}</span></div>
     </div>
+    <div class="seg" role="group" aria-label="Zeitraum">${STAT_RANGES.map(([r, l]) => html`<button class=${range === r ? 'on' : ''} aria-pressed=${range === r ? 'true' : 'false'} onClick=${() => setR(r)}>${l}</button>`)}</div>
 
-    <section class="card stack" style="gap:12px"><div class="row between"><h2 class="h3">Konstanz</h2><span class="tiny faint">Tippe auf einen Tag</span></div>
-      <${Heatmap} src=${src} from=${st.from} n=${range} key=${'hm' + range} />
-      ${keys.length ? html`<${Legend} keys=${keys} />` : null}</section>
-
-    <section class="card stack" style="gap:12px"><h2 class="h3">Einheiten pro Woche</h2>
-      ${keys.length ? html`<${Columns} cols=${cols} keys=${keys} fmt=${fmtInt} label="Einheiten pro Woche nach Einheit" key=${'c' + range} /><${Legend} keys=${keys} />
-        <${DataTable} head=${['KW', ...keys.map(colorName), 'Summe']} rows=${cols.map(c => [c.label, ...keys.map(k => c.parts[k] || 0), c.total])} />` : html`<p class="small muted" style="margin:0">Keine Einheiten in diesem Zeitraum.</p>`}</section>
-
-    ${exIdx.length ? html`<section class="card stack" style="gap:12px">
-      <div class="row between wrap"><h2 class="h3">Kraftkurve</h2><span class="tiny faint">geschätztes 1RM pro Einheit</span></div>
-      <select id="stats-ex" class="inp" value=${exId} onChange=${e => setExSel(e.target.value)} aria-label="Übung wählen">${exIdx.map(x => html`<option value=${x.id}>${x.name}</option>`)}</select>
-      ${series.length ? html`<${LineChart} pts=${series} color=${exColor} fmt=${fmt1} unit=" kg" label=${'1RM-Verlauf ' + (exInfo ? exInfo.name : '')} key=${exId + range} />
-        <div class="grid3">
-          <div><div class="eyebrow">Aktuell</div><div class="data" style="font-size:16px;margin-top:3px">${fmt1(series[series.length - 1].y)} kg</div></div>
-          <div><div class="eyebrow">Bestwert</div><div class="data" style="font-size:16px;margin-top:3px">${fmt1(exInfo.best)} kg</div></div>
-          <div><div class="eyebrow">Zeitraum</div><div class=${'data' + (delta > 0 ? ' up' : '')} style="font-size:16px;margin-top:3px">${delta == null ? '–' : (delta >= 0 ? '+' : '') + fmt1(delta * 100) + ' %'}</div></div>
-        </div>
-        ${exInfo && exInfo.bw ? html`<p class="tiny faint" style="margin:0">Mit ${fmtKg(pref('bw'))} kg Körpergewicht gerechnet (änderbar unter Plan).</p>` : null}
-        <${DataTable} head=${['Datum', '1RM (kg)', 'Bester Satz']} rows=${series.slice().reverse().map(p => [dateShort(p.date), fmt1(p.y), p.set ? fmtSet(p.bw, p.set) : '–'])} />`
-        : html`<p class="small muted" style="margin:0">Keine Einträge für diese Übung in diesem Zeitraum.</p>`}
+    ${groups.length ? html`<section class="card stack" style="gap:6px">
+      <div class="row between"><h2 class="h3">Fortschritt pro Übung</h2><${Info} text="Der Pfeil vergleicht dein letztes Training mit dem vor 4 Wochen. Gewicht und Wiederholungen zählen zusammen: Mehr Wiederholungen mit gleichem Gewicht sind also auch Fortschritt." /></div>
+      ${groups.map(g => html`<div class="stack" style="gap:0">
+        ${groups.length > 1 && html`<div class=${'eyebrow t-' + g.color} style="margin:10px 0 2px;justify-content:flex-start;gap:7px"><span class="disc sm"></span>${g.name}</div>`}
+        ${g.items.map(x => { const [sym, word, cls] = TREND[x.trend], open = openEx === x.id;
+          const series = x.pts.filter(p => p.date >= fromKey);
+          return html`<div class="prog" key=${x.id}>
+            <button class="prog-row" aria-expanded=${open ? 'true' : 'false'} onClick=${() => setOpenEx(open ? null : x.id)}>
+              <span class="grow" style="min-width:0"><b>${x.name}</b>
+                <div class="tiny faint">${x.base && x.trend !== 'neu' ? (x.base.date <= dkey(addDays(new Date(), -28)) ? 'vor 4 Wochen' : 'am ' + dateShort(x.base.date).slice(4)) + ': ' + fmtSet(x.bw, x.base.set, false) : 'erst seit Kurzem dabei'}</div></span>
+              <span class="data prog-now">${fmtSet(x.bw, x.last.set, false)}</span>
+              <span class=${'trend ' + cls} title=${word}><i aria-hidden="true">${sym}</i>${word}</span>
+            </button>
+            ${open && html`<div class="stack" style="gap:8px;padding:2px 0 12px">
+              ${series.length > 1 ? html`<${LineChart} pts=${series} color=${g.color} setLabel=${q => fmtSet(q.bw, q.set, false)} label=${'Verlauf ' + x.name} key=${x.id + range} />`
+                : html`<p class="tiny faint" style="margin:0">Für eine Kurve braucht es mindestens zwei Einheiten ${R[2]}.</p>`}
+              <div class="row between small"><span class="muted">Bestleistung</span><span><b class="data">${fmtSet(x.bw, x.best.set, false)}</b> <span class="faint">am ${dateShort(x.best.date).slice(4)}</span></span></div>
+              <p class="tiny faint" style="margin:0">Geht die Linie hoch, bist du stärker geworden. Gewicht und Wiederholungen zählen zusammen.</p>
+            </div>`}
+          </div>`; })}
+      </div>`)}
     </section>` : null}
 
-    ${runs.length ? html`<section class=${'card stack t-' + actColor} style="gap:12px"><div class="row between"><h2 class="h3">${act}: km pro Woche</h2><span class="tiny faint">${actRuns.length} Einheiten</span></div>
-      ${acts.length > 1 && html`<div class="chips">${acts.map(x => html`<button class=${'chip' + (x === act ? ' on' : '')} onClick=${() => setActSel(x)}>${x}</button>`)}</div>`}
-      <${Columns} cols=${st.weeks.map((w, i) => ({ label: String(w.kw), tip: 'KW ' + w.kw, parts: { [actColor]: actWeeks[i] }, total: actWeeks[i] }))} keys=${[actColor]} fmt=${fmt1} unit=" km" label=${act + ' Kilometer pro Woche'} key=${'r' + range + act} />
-      <div class="grid2"><div><div class="eyebrow">Bestwert ab 3 km</div><div class="data" style="font-size:16px;margin-top:3px">${bestRate ? bestRate.main + ' ' + bestRate.unit : '–'}</div></div>
-        <div><div class="eyebrow">Längste Einheit</div><div class="data" style="font-size:16px;margin-top:3px">${fmt1(Math.max(0, ...actRuns.map(s => s.run.km || 0)))} km</div></div></div></section>` : null}
+    <section class="card stack" style="gap:12px"><h2 class="h3">Trainings pro Woche</h2>
+      ${keys.length ? html`<${Columns} cols=${cols} keys=${keys} fmt=${fmtInt} label="Trainings pro Woche" key=${'c' + range} />${keys.length > 1 ? html`<${Legend} keys=${keys} />` : null}`
+        : html`<p class="small muted" style="margin:0">Keine Trainings ${R[2]}.</p>`}</section>
 
-    ${fights.length ? html`<section class=${'card stack t-' + fightColor} style="gap:12px"><div class="row between"><h2 class="h3">Kampfsport: Runden pro Woche</h2><span class="tiny faint">${fights.length} Einheiten</span></div>
-      <${Columns} cols=${st.weeks.map(w => ({ label: String(w.kw), tip: 'KW ' + w.kw, parts: { [fightColor]: w.rounds }, total: w.rounds }))} keys=${[fightColor]} fmt=${fmtInt} unit=" Rd." label="Kampfsportrunden pro Woche" key=${'b' + range} /></section>` : null}
+    ${acts.map(act => { const rs = runs.filter(x => (x.run.act || 'Laufen') === act), km = rs.reduce((n, x) => n + (x.run.km || 0), 0);
+      const best = rs.filter(x => x.run.km >= 3).reduce((m, x) => (!m || x.run.sec / x.run.km < m.run.sec / m.run.km ? x : m), null);
+      const far = rs.reduce((m, x) => Math.max(m, x.run.km || 0), 0), color = (rs[0] && rs[0].color) || 'run';
+      return html`<section class=${'card stack t-' + color} style="gap:10px"><h2 class="h3">${act}</h2>
+        <div class="grid2">
+          <div><div class="eyebrow">Strecke</div><div class="bigval">${fmt1(km)}<small> km</small></div><div class="tiny faint">${rs.length} ${rs.length === 1 ? 'Einheit' : 'Einheiten'}</div></div>
+          <div><div class="eyebrow">Am schnellsten</div><div class="bigval">${best ? cardioRate(best.run).main : '–'}<small> ${cardioRate({ act }).unit}</small></div><div class="tiny faint">${best ? 'ab 3 km' : 'noch kein Lauf ab 3 km'}</div></div>
+        </div>
+        <div class="tiny faint">Längste Einheit: ${fmt1(far)} km</div></section>`; })}
 
-    ${exIdx.length ? html`<section class="card stack" style="gap:8px"><h2 class="h3">Rekorde</h2>
-      <div class="tablewrap" style="margin:0"><table><thead><tr><th>Übung</th><th class="n">1RM</th><th class="n">Satz</th><th class="n">Datum</th></tr></thead>
-      <tbody>${exIdx.map(x => html`<tr><td style="padding-left:0;white-space:normal">${x.name}</td><td class="n">${fmt1(x.best)}</td><td class="n">${x.bestSet ? fmtSet(x.bw, x.bestSet) : '–'}</td><td class="n" style="padding-right:0">${x.bestDate ? dateShort(x.bestDate).slice(4) : ''}</td></tr>`)}</tbody></table></div></section>` : null}
+    ${fights.length ? html`<section class=${'card stack t-' + ((fights[0] && fights[0].color) || 'box')} style="gap:10px"><h2 class="h3">Kampfsport</h2>
+      <div class="grid2">
+        <div><div class="eyebrow">Runden</div><div class="bigval">${st.rounds}</div><div class="tiny faint">${fights.length} ${fights.length === 1 ? 'Einheit' : 'Einheiten'}</div></div>
+        <div><div class="eyebrow">Rundenzeit</div><div class="bigval">${fmtInt(fights.reduce((n, x) => n + (x.box.rounds || 0) * (x.box.round || 0), 0) / 60)}<small> min</small></div></div>
+      </div></section>` : null}
   </div>`;
 }
 
@@ -2367,6 +2472,7 @@ function Stats() {
 const KIND_L = { kraft: 'Kraft', boxen: 'Kampfsport', lauf: 'Ausdauer' };
 function Plan() {
   const st = S.settings, p = st.prefs, fileRef = useRef(null);
+  const [day, setDay] = useState(null);
   const setPref = (k, v) => { p[k] = v; saveSettings(); };
   const addTpl = kind => {
     const used = st.templates.map(t => t.color), color = COLORS.find(c => !used.includes(c)) || (kind === 'boxen' ? 'box' : kind === 'lauf' ? 'run' : 'push');
@@ -2375,67 +2481,77 @@ function Plan() {
     st.templates.push(t); saveSettings(); S.sheet = { type: 'tpl', id: t.id }; commit();
   };
   const lb = S.meta.lastBackup;
+  const canVibrate = typeof navigator.vibrate === 'function' && !/iPhone|iPad|iPod/.test(navigator.userAgent);
   return html`<div class="stack">
     <h1 class="h1" style="font-size:40px;margin-top:4px">Plan</h1>
-    <section class="card stack" style="gap:4px"><h2 class="h3" style="margin-bottom:6px">Wochenplan</h2>
-      ${DAY_L.map((dn, i) => html`<div class="row" style="padding:8px 0;border-top:${i ? '1px solid var(--line-2)' : '0'};align-items:flex-start">
-        <span style="width:34px;font-weight:700;padding-top:7px">${DAY_S[i]}</span>
-        <div class="chips grow">${st.templates.map(t => { const on = st.week[i].includes(t.id); return html`<button class=${'chip c t-' + t.color + (on ? ' on' : '')} aria-pressed=${on ? 'true' : 'false'} aria-label=${dn + ': ' + t.name}
-          onClick=${() => { st.week[i] = on ? st.week[i].filter(x => x !== t.id) : [...st.week[i], t.id]; saveSettings(); }}>${t.name}</button>`; })}</div></div>`)}
+    <section class="card stack" style="gap:0"><div class="row between" style="margin-bottom:6px"><h2 class="h3">Wochenplan</h2><span class="tiny faint">Tag antippen zum Ändern</span></div>
+      ${DAY_L.map((dn, i) => { const on = st.week[i].map(tpl).filter(Boolean), open = day === i;
+        return html`<div style=${'border-top:' + (i ? '1px solid var(--line-2)' : '0')}>
+          <button class="dayrow" aria-expanded=${open ? 'true' : 'false'} aria-label=${dn + ': ' + (on.length ? on.map(t => t.name).join(', ') : 'Ruhetag') + ', ändern'} onClick=${() => setDay(open ? null : i)}>
+            <span class="d">${DAY_S[i]}</span>
+            <span class="grow chips" style="gap:6px">${on.length ? on.map(t => html`<span class=${'chip c sm on t-' + t.color}>${t.name}</span>`) : html`<span class="small faint">Ruhetag</span>`}</span>
+            <span class="iconbtn" aria-hidden="true" style=${'transform:rotate(' + (open ? 180 : 0) + 'deg)'}>${I.down}</span></button>
+          ${open && html`<div class="chips" style="padding:0 0 12px 42px">${st.templates.map(t => { const sel = st.week[i].includes(t.id); return html`<button class=${'chip c t-' + t.color + (sel ? ' on' : '')} aria-pressed=${sel ? 'true' : 'false'}
+            onClick=${() => { st.week[i] = sel ? st.week[i].filter(x => x !== t.id) : [...st.week[i], t.id]; saveSettings(); }}>${t.name}</button>`; })}</div>`}
+        </div>`; })}
     </section>
     <section class="card stack" style="gap:2px"><h2 class="h3" style="margin-bottom:6px">Einheiten</h2>
       <div class="list">${st.templates.map(t => html`<button class=${'li t-' + t.color} onClick=${() => { S.sheet = { type: 'tpl', id: t.id }; commit(); }}>
-        <span class="disc"></span><span class="grow"><b class="h3">${t.name}</b><div class="tiny faint">${KIND_L[t.kind]} · ${t.kind === 'kraft' ? t.exercises.length + ' Übungen' : t.kind === 'boxen' ? t.box.rounds + ' × ' + fmtDur(t.box.round) : (t.run.act || 'Laufen') + ', Ziel ' + fmt1(t.run.km) + ' km'}</div></span>
+        <span class="disc"></span><span class="grow"><b class="h3">${t.name}</b><div class="tiny faint">${t.kind === 'kraft' ? t.exercises.length + ' Übungen' : t.kind === 'boxen' ? t.box.rounds + ' Runden à ' + fmtDur(t.box.round) : (t.run.act || 'Laufen') + ', Ziel ' + fmt1(t.run.km) + ' km'}</div></span>
         <span class="r faint">Bearbeiten</span></button>`)}</div>
       <div class="row wrap" style="gap:8px;margin-top:8px"><button class="btn sm" onClick=${() => addTpl('kraft')}>+ Kraft</button><button class="btn sm" onClick=${() => addTpl('boxen')}>+ Kampfsport</button><button class="btn sm" onClick=${() => addTpl('lauf')}>+ Ausdauer</button></div>
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Einstellungen</h2>
       <div class="field" style="padding:6px 0"><span>Design</span><div class="seg">${[['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => html`<button class=${p.theme === k ? 'on' : ''} onClick=${() => { setPref('theme', k); applyTheme(); }}>${l}</button>`)}</div></div>
-      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Pausenende und Gong, auch im Stummmodus und mit Sperrbildschirm-Hinweis' : 'Pausenende, Gong im Rundentimer. Im Stummmodus kann das iPhone Töne der Webseite unterdrücken, in der Formkurve-App nicht.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
+      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Am Pausenende, auch im Stummmodus' : 'Am Pausenende. Im Stummmodus bleibt die Webseite oft still.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); beep([880], 0.1); } }} />
       ${Cap() && html`<div class="row between" style="gap:10px;padding:2px 0"><span class="small muted">Mitteilung bei gesperrtem iPhone</span><button class="btn sm" onClick=${testNotify}>Testen</button></div>`}
-      <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Kurzes Piepen in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); beep([660], 0.07); } }} />
-      <hr class="hr" /><${Toggle} on=${!!p.voice} label="Sprachansage" hint="Sagt an, was als Nächstes kommt, zum Beispiel „Pause vorbei. Butterfly, Satz 3“" onChange=${v => { setPref('voice', v); if (v) { _voiceReady = false; unlockAudio(); setTimeout(() => say('Pause vorbei. Butterfly, Satz 3'), 150); } }} />
-      <hr class="hr" /><${Toggle} on=${p.vibrate} label="Vibration" hint="Auf Android; iPhones unterstützen das im Browser nicht" onChange=${v => setPref('vibrate', v)} />
+      <hr class="hr" /><${Toggle} on=${p.countdown !== false} label="Countdown" hint="Piept in den letzten 3 Sekunden der Pause" onChange=${v => { setPref('countdown', v); if (v) { unlockAudio(); beep([660], 0.07); } }} />
+      <hr class="hr" /><${Toggle} on=${!!p.voice} label="Sprachansage" hint="Sagt die nächste Übung an" onChange=${v => { setPref('voice', v); if (v) { _voiceReady = false; unlockAudio(); setTimeout(() => say('Pause vorbei. Butterfly, Satz 3'), 150); } }} />
+      ${canVibrate && html`<hr class="hr" /><${Toggle} on=${p.vibrate} label="Vibration" hint="Am Pausenende" onChange=${v => setPref('vibrate', v)} />`}
       <hr class="hr" />
       <div class="grid2" style="padding-top:8px">
         <label class="field"><span>Körpergewicht (kg)</span><${NumInput} id="pref-bw" value=${p.bw} onChange=${v => setPref('bw', v || 0)} /></label>
         <label class="field"><span>Langhantelstange (kg)</span><${NumInput} id="pref-bar" value=${p.bar} onChange=${v => setPref('bar', v || 20)} /></label>
       </div>
-      <p class="tiny faint" style="margin:4px 0 0">Das Körpergewicht zählt bei Klimmzügen, Dips und Co. für 1RM und Volumen mit.</p>
+      <p class="tiny faint" style="margin:4px 0 0">Das Körpergewicht zählt bei Klimmzügen, Dips & Co. mit.</p>
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Pausen</h2>
-      <p class="small muted" style="margin:0 0 4px">So rechnet Formkurve die Pause zwischen zwei Sätzen. Maßgeblich ist der untere Wert des Wiederholungsbereichs.</p>
-      <div class="tablewrap" style="margin:0 0 4px"><table><thead><tr><th>Wdh.</th><th class="n">Grundübung</th><th class="n">Isolation</th></tr></thead><tbody>
-        ${REST_TABLE.map(([l, , g, i]) => html`<tr><td style="padding-left:0">${l}</td><td class="n">${fmtDur(styledRest(g))}</td><td class="n" style="padding-right:0">${fmtDur(styledRest(i))}</td></tr>`)}</tbody></table></div>
-      <p class="tiny faint" style="margin:0 0 6px">Grundübungen wie Bankdrücken, Kniebeuge oder Rudern beanspruchen viel Muskelmasse und brauchen länger als Isolationsübungen wie Curls oder Butterfly. Bauch und Rumpf: 1:00. Pausen, die du selbst einstellst, bleiben so.</p>
-      <div class="field" style="padding:4px 0 6px"><span>Pausen-Stil</span><div class="seg" role="group" aria-label="Pausen-Stil">${Object.entries(REST_STYLES).map(([k, [l]]) => html`<button class=${(p.restStyle || 'normal') === k ? 'on' : ''} aria-pressed=${(p.restStyle || 'normal') === k ? 'true' : 'false'} onClick=${() => setPref('restStyle', k)}>${l}</button>`)}</div>
-        <span class="tiny faint" style="font-weight:400">Kurz: 25 % weniger, Lang: 25 % mehr als die Tabelle. Gilt für alle empfohlenen Pausen.</span></div>
-      <hr class="hr" /><${Toggle} on=${p.restMuscle !== false} label="Mehr Pause, wenn der Muskel schon dran war" hint=${'Ab der zweiten Übung für denselben Muskel in einer Einheit +0:30, zum Beispiel Butterfly nach Bankdrücken.'} onChange=${v => setPref('restMuscle', v)} />
-      <hr class="hr" /><${Toggle} on=${p.restAuto !== false} label="Pausentimer automatisch starten" hint="Startet nach jedem abgehakten Satz. Aus: kein Timer, du trainierst nach Gefühl." onChange=${v => setPref('restAuto', v)} />
-      <hr class="hr" /><${Toggle} on=${p.restSwitch !== false} label="Wechselpause zwischen Übungen" hint=${'Nach dem letzten Satz einer Übung: die längere Pause der beiden Übungen, mindestens ' + fmtDur(SWITCH_MIN) + '. Zeit zum Umbauen und Erholen.'} onChange=${v => setPref('restSwitch', v)} />
-      <hr class="hr" /><${Toggle} on=${!!p.restByReps} label="Immer nach Tabelle" hint="Auch selbst eingestellte Pausen folgen dann der Tabelle." onChange=${v => setPref('restByReps', v)} />
+      <div class="field" style="padding:4px 0 6px"><span>Pausenlänge</span><div class="seg" role="group" aria-label="Pausen-Stil">${Object.entries(REST_STYLES).map(([k, [l]]) => html`<button class=${(p.restStyle || 'normal') === k ? 'on' : ''} aria-pressed=${(p.restStyle || 'normal') === k ? 'true' : 'false'} onClick=${() => setPref('restStyle', k)}>${l}</button>`)}</div></div>
+      <hr class="hr" /><${Toggle} on=${p.restAuto !== false} label="Pausentimer automatisch starten" hint="Nach jedem abgehakten Satz" onChange=${v => setPref('restAuto', v)} />
+      <details class="more"><summary>Mehr zu Pausen</summary><div class="stack" style="gap:6px;padding-top:8px">
+        <p class="small muted" style="margin:0">So lang ist die Pause zwischen zwei Sätzen, je nach Wiederholungen:</p>
+        <div class="tablewrap" style="margin:0"><table><thead><tr><th>Wdh.</th><th class="n">Grundübung</th><th class="n">Isolation</th></tr></thead><tbody>
+          ${REST_TABLE.map(([l, , g, i]) => html`<tr><td style="padding-left:0">${l}</td><td class="n">${fmtDur(styledRest(g))}</td><td class="n" style="padding-right:0">${fmtDur(styledRest(i))}</td></tr>`)}</tbody></table></div>
+        <p class="tiny faint" style="margin:0">Grundübungen (Bankdrücken, Kniebeuge, Rudern) brauchen mehr Pause als Isolationsübungen (Curls, Butterfly). Bauch: 1:00. Selbst eingestellte Pausen bleiben.</p>
+        <${Toggle} on=${p.restMuscle !== false} label="Mehr Pause für denselben Muskel" hint="+0:30, z. B. Butterfly nach Bankdrücken" onChange=${v => setPref('restMuscle', v)} />
+        <hr class="hr" /><${Toggle} on=${p.restSwitch !== false} label="Pause beim Übungswechsel" hint=${'Mindestens ' + fmtDur(SWITCH_MIN) + ' zum Umbauen'} onChange=${v => setPref('restSwitch', v)} />
+        <hr class="hr" /><${Toggle} on=${!!p.restByReps} label="Immer nach Tabelle" hint="Auch eigene Pausen folgen der Tabelle" onChange=${v => setPref('restByReps', v)} />
+      </div></details>
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Erweitert</h2>
-      <${Toggle} on=${p.paceMode === 'pace'} label="Lauftempo als min/km" hint="Aus: km/h (Standard). An: Pace in Minuten pro Kilometer, wie bei Lauf-Uhren." onChange=${v => setPref('paceMode', v ? 'pace' : 'kmh')} />
-      <${Toggle} on=${p.carryW !== false} label="Gewicht in die nächsten Sätze übernehmen" hint="Änderst du das Gewicht, übernehmen es die folgenden Sätze." onChange=${v => setPref('carryW', v)} />
+      <${Toggle} on=${p.paceMode === 'pace'} label="Lauftempo in min/km" hint="Statt km/h" onChange=${v => setPref('paceMode', v ? 'pace' : 'kmh')} />
+      <hr class="hr" /><${Toggle} on=${p.carryW !== false} label="Gewicht für nächste Sätze übernehmen" hint="Änderst du ein Gewicht, gilt es auch für die folgenden Sätze" onChange=${v => setPref('carryW', v)} />
     </section>
     <section class="card stack" style="gap:10px"><h2 class="h3">Daten</h2>
-      <p class="small muted" style="margin:0">Alles liegt nur auf diesem Gerät, ohne Konto und ohne Server. ${lb ? 'Letztes Backup: ' + dateShort(dkey(new Date(lb))) + '.' : 'Noch kein Backup.'}${S.meta.persisted ? ' Speicher ist vor automatischem Löschen geschützt.' : ''}</p>
+      <p class="small muted" style="margin:0">Alles bleibt auf diesem Gerät. ${lb ? 'Letztes Backup: ' + dateShort(dkey(new Date(lb))) + '.' : 'Noch kein Backup.'}</p>
       <div class="grid2">
         <button class="btn sm primary" onClick=${exportJSON}>Backup sichern</button>
         <button class="btn sm" onClick=${() => fileRef.current && fileRef.current.click()}>Backup laden</button>
-        <button class="btn sm" onClick=${() => shareText(textExport(), 'Formkurve-Protokoll')}>Als Text teilen</button>
-        ${!S.standalone ? html`<button class="btn sm" onClick=${installApp}>App installieren</button>` : html`<span></span>`}
       </div>
       <input id="import-file" ref=${fileRef} type="file" accept=".json,application/json" hidden onChange=${e => { const f = e.target.files && e.target.files[0]; if (f) importJSON(f); e.target.value = ''; }} />
-      <hr class="hr" />
-      <div class="row wrap between" style="gap:8px">
-        <${Confirm} label="Plan neu einrichten" yes="Neu einrichten" danger=${false} onYes=${() => { S.prevSettings = S.settings; S.settings = null; S.tab = 'heute'; commit(); }} />
-        <${Confirm} label="Alles löschen" yes="Ja, alles löschen" onYes=${resetAll} />
-      </div>
-      <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Einheiten im Verlauf.</p>
+      <details class="more"><summary>Mehr</summary><div class="stack" style="gap:10px;padding-top:8px">
+        <div class="grid2">
+          <button class="btn sm" onClick=${() => shareText(textExport(), 'Formkurve-Protokoll')}>Als Text teilen</button>
+          ${!S.standalone ? html`<button class="btn sm" onClick=${installApp}>App installieren</button>` : html`<span></span>`}
+        </div>
+        <div class="row wrap between" style="gap:8px">
+          <${Confirm} label="Plan neu einrichten" yes="Neu einrichten" danger=${false} onYes=${() => { S.prevSettings = S.settings; S.settings = null; S.tab = 'heute'; commit(); }} />
+          <${Confirm} label="Alles löschen" yes="Ja, alles löschen" onYes=${resetAll} />
+        </div>
+        <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Trainings im Verlauf.</p>
+      </div></details>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Double Progression: Das Gewicht bleibt, bis alle Sätze das obere Ende des Bereichs erreichen. Dann steigt es um die eingestellte Stufe. · Formkurve 1.4.3</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.5.0</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
