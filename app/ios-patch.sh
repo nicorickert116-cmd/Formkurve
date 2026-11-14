@@ -27,6 +27,13 @@ grep -q "AVAudioSession" "$AD" || sed -i '' 's|// Override point for customizati
         try? AVAudioSession.sharedInstance().setActive(true)|' "$AD"
 grep -n "AVAudioSession\|import AVFoundation" "$AD"
 
+# Töne und Sprachansage nativ abspielen (Plugin „FKSound“ + eigener Bridge-ViewController)
+grep -q "FKSoundPlugin" "$AD" || cat native/FKSound.swift >> "$AD"
+SB=ios/App/App/Base.lproj/Main.storyboard
+sed -i '' 's/customClass="CAPBridgeViewController" customModule="Capacitor"/customClass="FKBridgeViewController" customModule="App" customModuleProvider="target"/' "$SB"
+grep -n "customClass" "$SB"
+grep -c "FKSoundPlugin" "$AD"
+
 # App-Icon und Startbild
 ICON=ios/App/App/Assets.xcassets/AppIcon.appiconset
 for f in "$ICON"/*.png; do cp resources/icon-1024.png "$f"; done
