@@ -926,14 +926,74 @@ async function testNotify() {
   setTimeout(() => { if (document.visibilityState === 'visible') { sfx('end'); toast('So klingt das Pausenende'); } }, 6000);
   toast('Sperr jetzt dein iPhone. In 6 Sekunden kommt die Mitteilung.');
 }
+/* ---------- Ton der Mitteilungen ----------
+   Ohne Angabe sind Mitteilungen stumm. Der gewählte Klang wird als WAV in Library/Sounds der App gelegt,
+   dort findet iOS ihn für Mitteilungen (auch bei gesperrtem iPhone; im Stummmodus nur Vibration). */
+const SND_DIR = 'Sounds', SND_RX = /^fk-.*\.wav$/;
+function wavB64(list, sr = 44100, peakTo = 0.9) {
+  let end = 0.05; for (const t of list) end = Math.max(end, (t.t || 0) + (t.d || 0.1) + 0.05);
+  const n = Math.floor(Math.min(end, 6) * sr), mix = new Float32Array(n);
+  for (const t of list) {
+    if (t.n) continue;
+    const v = Math.max(0.0002, t.v || 0.3), d = Math.max(0.02, t.d || 0.1), s0 = Math.floor((t.t || 0) * sr), len = Math.floor(d * sr), att = 0.008 * sr, w = 2 * Math.PI * t.f / sr;
+    for (let k = 0; k < len && s0 + k < n; k++) {
+      const env = k < att ? 0.0001 * Math.pow(v / 0.0001, k / att) : v * Math.pow(0.0001 / v, (k - att) / Math.max(1, len - att));
+      mix[s0 + k] += env * Math.sin(w * k);
+    }
+  }
+  let pk = 0; for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(mix[i]));
+  const g = pk > 0 ? peakTo / pk : 1, b = new DataView(new ArrayBuffer(44 + n * 2)), str = (o, s) => { for (let i = 0; i < s.length; i++) b.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); b.setUint32(4, 36 + n * 2, true); str(8, 'WAVEfmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+  b.setUint32(24, sr, true); b.setUint32(28, sr * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); str(36, 'data'); b.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) b.setInt16(44 + i * 2, Math.max(-32767, Math.min(32767, Math.round(mix[i] * g * 32767))), true);
+  const u = new Uint8Array(b.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+const hash36 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
+let _sndReady = null, _snd = {};
+/* legt die Tondateien für Pausenende (end) und Erinnerungen (remind) an, falls sie fehlen; räumt alte auf */
+function prepNotifSounds() {
+  const FS = nativePlugin('Filesystem');
+  if (!FS || !Cap()) { _sndReady = Promise.resolve(); return _sndReady; }
+  _sndReady = (async () => {
+    const key = SOUNDS[pref('soundSet')] ? pref('soundSet') : 'marimba', set = SOUNDS[key], want = {};
+    for (const [kind, src] of [['end', 'end'], ['remind', 'km']]) { const list = set[src](); want[kind] = { name: 'fk-' + key + '-' + kind + '-' + hash36(JSON.stringify(list)) + '.wav', list }; }
+    let have = [];
+    try { const r = await FS.readdir({ path: SND_DIR, directory: 'LIBRARY' }); have = ((r && r.files) || []).map(f => (typeof f === 'string' ? f : f.name)); } catch (e) {}
+    const next = {};
+    for (const [kind, x] of Object.entries(want)) {
+      if (!have.includes(x.name)) { try { await FS.writeFile({ path: SND_DIR + '/' + x.name, data: wavB64(x.list), directory: 'LIBRARY', recursive: true }); } catch (e) { continue; } }
+      next[kind] = x.name;
+    }
+    _snd = next;
+    const keep = Object.values(next);
+    for (const f of have) if (SND_RX.test(f) && !keep.includes(f)) { try { await FS.deleteFile({ path: SND_DIR + '/' + f, directory: 'LIBRARY' }); } catch (e) {} }
+  })().catch(() => {});
+  return _sndReady;
+}
+async function notifSound(kind) { if (pref('sound') === false) return null; if (!_sndReady) prepNotifSounds(); await _sndReady; return _snd[kind] || null; }
+/* geplante Mitteilungen mit Ton; ist die App offen, spielt sie den Ton selbst – dann die Mitteilung kurz vorher zurückziehen */
+const _pend = {};
 async function nativeNotify(id, at, title, body) {
   const LN = nativePlugin('LocalNotifications'); if (!LN) return;
+  delete _pend[id];
   try {
     await LN.cancel({ notifications: [{ id }] });
     if (!at || at <= Date.now() + 1500) return;
     if (!(await nativeNotifyPerm())) return;
-    await LN.schedule({ notifications: [{ id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } }] });
+    const n = { id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } }, snd = await notifSound('end');
+    if (snd) n.sound = snd;
+    await LN.schedule({ notifications: [n] });
+    _pend[id] = at;
   } catch (e) {}
+}
+function quietForeground(now) {
+  if (document.visibilityState !== 'visible') return;
+  for (const id of Object.keys(_pend)) {
+    const left = _pend[id] - now;
+    if (left <= 900 && left > -2000) { delete _pend[id]; const LN = nativePlugin('LocalNotifications'); if (LN) { try { Promise.resolve(LN.cancel({ notifications: [{ id: Number(id) }] })).catch(() => {}); } catch (e) {} } }
+    else if (left <= -2000) delete _pend[id];
+  }
 }
 /* ---------- iPhone-App: Trainings-Erinnerungen, SideStore-Hinweis, Auto-Backup ---------- */
 const REMIND_IDS = Array.from({ length: 40 }, (_, i) => 200 + i), SIDE_IDS = [300, 301], SIDE_DAYS = 7;
@@ -951,7 +1011,7 @@ async function scheduleRemindersNow(ask) {
   const LN = nativePlugin('LocalNotifications'); if (!LN || !S.settings) return;
   try { await LN.cancel({ notifications: [...REMIND_IDS, ...SIDE_IDS].map(id => ({ id })) }); } catch (e) {}
   if (!(await notifyGranted(ask))) return;
-  const list = [], now = Date.now(), m = Number(pref('remind')) || 0, today = new Date();
+  const list = [], now = Date.now(), m = Number(pref('remind')) || 0, today = new Date(), snd = await notifSound('remind');
   if (m > 0) for (let d = 0; d < 14 && list.length < REMIND_IDS.length; d++) {
     const k = dkey(addDays(today, d));
     for (const x of planFor(k)) {
@@ -967,6 +1027,7 @@ async function scheduleRemindersNow(ask) {
       [SIDE_IDS[1], exp - 3 * 3600000, 'Formkurve läuft heute ab', 'Jetzt in SideStore erneuern, damit die App weiter startet. Deine Daten bleiben erhalten.']];
     for (const [id, at, title, body] of warn) if (at > now + 5000) list.push({ id, title, body, schedule: { at: new Date(at), allowWhileIdle: true } });
   }
+  if (snd) list.forEach(n => { n.sound = snd; });
   if (list.length) { try { await LN.schedule({ notifications: list }); } catch (e) {} }
 }
 const sideDaysLeft = () => (S.meta.sideAt ? Math.ceil((S.meta.sideAt + SIDE_DAYS * 86400000 - Date.now()) / 86400000) : null);
@@ -1079,7 +1140,7 @@ async function boot() {
   if (Cap()) S.standalone = true; // in der iPhone-App gibt es nichts zu installieren
   S.loaded = true; applyTheme(); commit();
   if (S.active) { toast('Dein Training läuft weiter'); resumeTrackingAfterReload(); }
-  if (Cap() && S.settings) { if (!S.meta.sideAt) { S.meta.sideAt = Date.now(); saveMeta(); } planReminders(); setTimeout(() => autoBackup(), 5000); }
+  if (Cap() && S.settings) { if (!S.meta.sideAt) { S.meta.sideAt = Date.now(); saveMeta(); } prepNotifSounds(); planReminders(); setTimeout(() => autoBackup(), 5000); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     try {
       const had = !!navigator.serviceWorker.controller;
@@ -1321,6 +1382,7 @@ function btTick(now) {
 let _lastSec = 0;
 setInterval(() => {
   const now = Date.now(); let ch = false;
+  quietForeground(now);
   if (S.rest) {
     const left = S.rest.end - now;
     if (!S.rest.fired && pref('countdown') !== false && left > 0 && left <= 3000) { const sc = Math.ceil(left / 1000); if (sc !== S.rest.cd) { S.rest.cd = sc; sfx(sc === 1 ? 'last' : 'tick'); } }
@@ -2941,8 +3003,8 @@ function Plan() {
     </section>
     <section class="card stack" style="gap:6px"><h2 class="h3">Einstellungen</h2>
       <div class="field" style="padding:6px 0"><span>Design</span><div class="seg">${[['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']].map(([k, l]) => html`<button class=${p.theme === k ? 'on' : ''} onClick=${() => { setPref('theme', k); applyTheme(); }}>${l}</button>`)}</div></div>
-      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Am Pausenende, auch im Stummmodus' : 'Am Pausenende. Im Stummmodus bleibt die Webseite oft still.'} onChange=${v => { setPref('sound', v); if (v) { unlockAudio(); sfx('end'); } }} />
-      ${p.sound && html`<div class="field" style="padding:2px 0 8px"><span>Klang</span><div class="seg" role="group" aria-label="Klang">${Object.entries(SOUNDS).map(([k, x]) => { const on = (SOUNDS[p.soundSet] ? p.soundSet : 'marimba') === k; return html`<button class=${on ? 'on' : ''} aria-pressed=${on ? 'true' : 'false'} onClick=${() => { setPref('soundSet', k); unlockAudio(); sfx('end'); }}>${x.label}</button>`; })}</div>
+      <${Toggle} on=${p.sound} label="Töne" hint=${Cap() ? 'Am Pausenende, auch im Stummmodus' : 'Am Pausenende. Im Stummmodus bleibt die Webseite oft still.'} onChange=${v => { setPref('sound', v); if (Cap()) scheduleReminders(false); if (v) { unlockAudio(); sfx('end'); } }} />
+      ${p.sound && html`<div class="field" style="padding:2px 0 8px"><span>Klang</span><div class="seg" role="group" aria-label="Klang">${Object.entries(SOUNDS).map(([k, x]) => { const on = (SOUNDS[p.soundSet] ? p.soundSet : 'marimba') === k; return html`<button class=${on ? 'on' : ''} aria-pressed=${on ? 'true' : 'false'} onClick=${() => { setPref('soundSet', k); unlockAudio(); sfx('end'); if (Cap()) prepNotifSounds().then(() => scheduleReminders(false)); }}>${x.label}</button>`; })}</div>
         <span class="tiny faint" style="font-weight:400">Antippen zum Anhören.</span></div>`}
       ${Cap() && html`<div class="row between" style="gap:10px;padding:2px 0"><span class="small muted">Mitteilung bei gesperrtem iPhone</span><button class="btn sm" onClick=${testNotify}>Testen</button></div>`}
       ${Cap() && html`<hr class="hr" /><div class="field" style="padding:6px 0"><span>Erinnerung vor dem Training</span><div class="seg" role="group" aria-label="Erinnerung vor dem Training">${[[0, 'Aus'], [15, '15 Min.'], [30, '30 Min.'], [60, '1 Std.']].map(([v, l]) => html`<button class=${(Number(p.remind) || 0) === v ? 'on' : ''} aria-pressed=${(Number(p.remind) || 0) === v ? 'true' : 'false'} onClick=${() => { setPref('remind', v); if (v) scheduleReminders(true); }}>${l}</button>`)}</div>
@@ -3002,7 +3064,7 @@ function Plan() {
         <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Trainings im Verlauf.</p>
       </div></details>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.6.2</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.6.3</p>
   </div>`;
 }
 function TplSheet({ id, openId, onClose }) {
