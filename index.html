@@ -442,6 +442,8 @@ details.more[open] summary::after{transform:rotate(-135deg) translateY(-1px)}
 .ready-ex{margin:0;padding:0 0 0 20px;display:flex;flex-direction:column;gap:6px}
 .ready-ex li{font-size:14.5px}
 .ready-ex li span:first-child{display:block}
+.lib-h{margin:16px 0 2px}
+.lib-h:first-child{margin-top:4px}
 </style>
 </head>
 <body>
@@ -548,6 +550,13 @@ function suggest(cfg, last) {
 const GROUPS = ['Brust', 'Rücken', 'Schultern', 'Bizeps', 'Trizeps', 'Beine', 'Po & Beinbeuger', 'Waden', 'Rumpf', 'Ganzkörper'];
 const EQUIP = ['Langhantel', 'Kurzhantel', 'Kabel', 'Maschine', 'Körpergewicht', 'SZ-Stange', 'Kettlebell'];
 const LEG_GROUPS = ['Beine', 'Po & Beinbeuger', 'Waden'];
+/* Anzeige: „Rumpf“ heißt in der App „Bauch“ (gespeichert bleibt „Rumpf“, damit alte Daten passen) */
+const gLabel = g => (g === 'Rumpf' ? 'Bauch' : g || '');
+const GROUPS_UI = ['Brust', 'Rücken', 'Schultern', 'Rumpf', 'Bizeps', 'Trizeps', 'Beine', 'Po & Beinbeuger', 'Waden', 'Ganzkörper'];
+/* Suchbegriffe je Muskelgruppe: „Bauch“, „Arme“, „Po“ … finden alle passenden Übungen */
+const GROUP_SYN = { Brust: 'brust chest', 'Rücken': 'ruecken rucken lat back', Schultern: 'schulter schultern delts', Rumpf: 'bauch bauchmuskeln abs sixpack core rumpf',
+  Bizeps: 'arme arm bizeps biceps', Trizeps: 'arme arm trizeps triceps', Beine: 'beine bein oberschenkel quads', 'Po & Beinbeuger': 'po gesaess gesass glutes beine beinbeuger hamstrings',
+  Waden: 'waden beine', 'Ganzkörper': 'ganzkoerper ganzkorper fullbody' };
 // id, name, group, equipment, sets, reps from, reps to, step kg, rest s, flags (b = barbell plates, k = bodyweight, s = Sekunden statt Wiederholungen)
 const LIB_RAW = [
   ['bankdruecken', 'Bankdrücken', 'Brust', 'Langhantel', 4, 6, 10, 2.5, 150, 'b'],
@@ -685,7 +694,7 @@ const PRESETS = {
     week: [[0], [], [1], [], [0], [], []] },
   ou: { name: 'Ober-/Unterkörper', desc: '4 Tage pro Woche, je zwei Ober- und Unterkörpertage.',
     tpls: [{ name: 'Oberkörper', focus: 'Brust · Rücken · Schultern · Arme', ex: ['bankdruecken', 'lh_rudern', 'kh_schulter', 'latziehen', 'sz_curls', 'pushdown'] },
-      { name: 'Unterkörper', focus: 'Beine · Po · Rumpf', ex: ['kniebeuge', 'rumaenisch', 'beinpresse', 'beinbeuger_liegend', 'waden_stehend', 'kabelcrunch'] }],
+      { name: 'Unterkörper', focus: 'Beine · Po · Bauch', ex: ['kniebeuge', 'rumaenisch', 'beinpresse', 'beinbeuger_liegend', 'waden_stehend', 'kabelcrunch'] }],
     week: [[0], [1], [], [0], [1], [], []] },
   pp: { name: 'Push/Pull', desc: '4 Tage pro Woche: Drücken und Ziehen im Wechsel.', legsToggle: true,
     tpls: [{ name: 'Push', focus: 'Brust · Schultern · Trizeps', ex: ['bankdruecken', 'kniebeuge', 'schraeg_kh', 'ohp', 'seitheben', 'pushdown'] },
@@ -694,7 +703,7 @@ const PRESETS = {
   ppl: { name: 'Push/Pull/Beine', desc: '3 Tage pro Woche, später auf 6 erweiterbar.',
     tpls: [{ name: 'Push', focus: 'Brust · Schultern · Trizeps', ex: ['bankdruecken', 'schraeg_kh', 'ohp', 'seitheben', 'pushdown', 'ueberkopf_kabel'] },
       { name: 'Pull', focus: 'Rücken · Bizeps · hintere Schulter', ex: ['klimmzuege', 'lh_rudern', 'kabelrudern', 'face_pulls', 'sz_curls', 'hammercurls'] },
-      { name: 'Beine', focus: 'Beine · Po · Waden · Rumpf', ex: ['kniebeuge', 'rumaenisch', 'beinpresse', 'beinbeuger_sitzend', 'waden_stehend', 'kabelcrunch'] }],
+      { name: 'Beine', focus: 'Beine · Po · Waden · Bauch', ex: ['kniebeuge', 'rumaenisch', 'beinpresse', 'beinbeuger_sitzend', 'waden_stehend', 'kabelcrunch'] }],
     week: [[0], [], [1], [], [2], [], []] },
   own: { name: 'Eigener Plan', desc: 'Leer starten und die Übungen selbst aus der Bibliothek wählen.',
     tpls: [{ name: 'Training A', focus: '', ex: [] }], week: [[0], [], [], [0], [], [], []] }
@@ -2294,11 +2303,11 @@ function DurInput({ id, value, onChange, placeholder = '3:00' }) {
 
 /* Woraus sich die empfohlene Pause zusammensetzt, in Worten */
 function restExplain(e, a) {
-  if (exGroup(e) === 'Rumpf') return 'Rumpfübung: ' + fmtDur(60);
+  if (exGroup(e) === 'Rumpf') return 'Bauchübung: ' + fmtDur(60);
   const parts = [(exTyp(e) === 'grund' ? 'Grundübung' : 'Isolation') + ' mit ' + e.lo + '–' + e.hi + ' ' + RU(e) + ': ' + fmtDur(stdRest(e))];
   const st = pref('restStyle') || 'normal';
   if (st !== 'normal') parts.push('Pausen-Stil ' + REST_STYLES[st][0].toLowerCase() + ': ' + fmtDur(styledRest(stdRest(e))));
-  if (a && pref('restMuscle') !== false && muscleBefore(a, e)) parts.push('+0:30, weil ' + exGroup(e) + ' heute schon dran war');
+  if (a && pref('restMuscle') !== false && muscleBefore(a, e)) parts.push('+0:30, weil ' + gLabel(exGroup(e)) + ' heute schon dran war');
   return parts.join(', ');
 }
 
@@ -2848,8 +2857,12 @@ function LibrarySheet({ title, exclude = [], onPick, onClose }) {
   const own = [];
   if (S.settings) S.settings.templates.forEach(t => (t.exercises || []).forEach(e => { if (!libEx(e.id) && !own.some(x => x.id === e.id)) own.push({ ...e, eq: e.bw ? 'Körpergewicht' : '', own: true }); }));
   exerciseIndex(S.sessions).forEach(x => { if (!libEx(x.id) && !own.some(y => y.id === x.id)) own.push({ ...exd(x.id, x.name, 3, 8, 12, 2.5, 90, { bw: x.bw }), eq: '', own: true }); });
-  const match = x => !exclude.includes(x.id) && (!g || x.group === g) && (!eq || x.eq === eq) && (!q || norm(x.name).includes(norm(q)));
+  const hay = x => norm([x.name, gLabel(x.group), x.group, x.eq, GROUP_SYN[x.group] || ''].join(' '));
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  const match = x => !exclude.includes(x.id) && (!g || x.group === g) && (!eq || x.eq === eq) && (!words.length || words.every(w => hay(x).includes(w)));
   const list = [...own.filter(match), ...LIB.filter(match)];
+  /* ohne Filter: nach Muskelgruppe gegliedert, damit man z. B. Bauch sofort findet */
+  const sections = !g && !words.length ? [['Eigene Übungen', own.filter(match)], ...GROUPS_UI.map(G => [gLabel(G), LIB.filter(x => x.group === G && match(x))])].filter(s => s[1].length) : [[null, list]];
   const pick = x => onPick(x.own ? { ...exd(x.id, x.name, x.sets || 3, x.lo || 8, x.hi || 12, x.inc || 2.5, x.rest || 90, { bar: x.bar, bw: x.bw, group: x.group, typ: exTyp(x), uni: !!x.uni }) } : exFromLib(x.id));
   const typ = ct || (['Langhantel', 'Körpergewicht', 'Kettlebell'].includes(ce) ? 'grund' : 'iso');
   const addCustom = () => {
@@ -2860,16 +2873,16 @@ function LibrarySheet({ title, exclude = [], onPick, onClose }) {
   return html`<${Sheet} onClose=${onClose} label=${title}>
     <div class="row between"><h2 class="h2">${title}</h2><button class="iconbtn" aria-label="Schließen" onClick=${onClose}>${I.x}</button></div>
     <input id="lib-search" class="inp" type="search" placeholder="Übung suchen" value=${q} onInput=${e => setQ(e.target.value)} />
-    <div class="hscroll" role="group" aria-label="Muskelgruppe">${['', ...GROUPS].map(x => html`<button class=${'chip' + (g === x ? ' on' : '')} onClick=${() => setG(x)}>${x || 'Alle'}</button>`)}</div>
+    <div class="hscroll" role="group" aria-label="Muskelgruppe">${['', ...GROUPS_UI].map(x => html`<button class=${'chip' + (g === x ? ' on' : '')} aria-pressed=${g === x ? 'true' : 'false'} onClick=${() => setG(x)}>${gLabel(x) || 'Alle'}</button>`)}</div>
     <div class="hscroll" role="group" aria-label="Gerät">${['', ...EQUIP].map(x => html`<button class=${'chip' + (eq === x ? ' on' : '')} onClick=${() => setEq(x)}>${x || 'Jedes Gerät'}</button>`)}</div>
-    <div>${list.length ? list.map(x => html`<button class="lib-row" key=${x.id} onClick=${() => pick(x)}>
-        <span><b style="font-weight:600">${x.name}</b><div class="tiny faint">${x.own ? 'Eigene Übung' : x.group + ' · ' + x.eq} · ${x.sets || 3}×${x.lo || 8}–${x.hi || 12}</div></span>
-        <span class="plus" aria-hidden="true">${I.plus}</span></button>`)
+    <div>${list.length ? sections.map(([h, xs]) => html`${h && html`<h3 class="eyebrow lib-h">${h}</h3>`}${xs.map(x => html`<button class="lib-row" key=${x.id} onClick=${() => pick(x)}>
+        <span><b style="font-weight:600">${x.name}</b><div class="tiny faint">${x.own ? 'Eigene Übung' : gLabel(x.group) + ' · ' + x.eq} · ${x.sets || 3}×${x.lo || 8}–${x.hi || 12}${x.sec ? ' s' : ''}</div></span>
+        <span class="plus" aria-hidden="true">${I.plus}</span></button>`)}`)
       : html`<p class="small muted">Nichts gefunden. Leg die Übung unten selbst an.</p>`}</div>
     <div class="card flat stack" style="gap:10px"><b class="h3">Eigene Übung</b>
       <input id="lib-custom-name" class="inp" placeholder="Name, z. B. Turkish Get-up" value=${cn} onInput=${e => setCn(e.target.value)} />
       <div class="grid2">
-        <label class="field"><span>Muskelgruppe</span><select id="lib-custom-group" class="inp" value=${cg} onChange=${e => setCg(e.target.value)}>${GROUPS.map(x => html`<option value=${x}>${x}</option>`)}</select></label>
+        <label class="field"><span>Muskelgruppe</span><select id="lib-custom-group" class="inp" value=${cg} onChange=${e => setCg(e.target.value)}>${GROUPS_UI.map(x => html`<option value=${x}>${gLabel(x)}</option>`)}</select></label>
         <label class="field"><span>Gerät</span><select id="lib-custom-eq" class="inp" value=${ce} onChange=${e => setCe(e.target.value)}>${EQUIP.map(x => html`<option value=${x}>${x}</option>`)}</select></label>
       </div>
       <div class="field"><span>Art</span><div class="seg" role="group" aria-label="Art der Übung">${[['grund', 'Grundübung'], ['iso', 'Isolation']].map(([k, l]) => html`<button class=${typ === k ? 'on' : ''} aria-pressed=${typ === k ? 'true' : 'false'} onClick=${() => setCt(k)}>${l}</button>`)}</div></div>
@@ -3161,7 +3174,7 @@ function Plan() {
         <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Trainings im Verlauf.</p>
       </div></details>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.7.0</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.7.1</p>
   </div>`;
 }
 /* ---------- fertige Einheiten ---------- */
