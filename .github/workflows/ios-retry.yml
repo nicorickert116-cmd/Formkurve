@@ -1,30 +1,40 @@
 name: iPhone-App erneut versuchen
 # Wenn GitHub für den Bau keinen Mac frei hat (Job ohne einen einzigen Schritt abgebrochen),
-# startet dieser kleine Linux-Job den Bau nach einer Minute neu – abwechselnd auf Intel- und Apple-Mac.
+# startet dieser kleine Linux-Job den Bau neu – abwechselnd auf Intel- und Apple-Mac.
+# Läuft direkt nach einem gescheiterten Bau und zusätzlich alle 20 Minuten (eine Kette über
+# workflow_run reißt ab, weil von Actions gestartete Läufe keine weiteren Ereignisse auslösen).
 on:
   workflow_run:
     workflows: ['iPhone-App bauen']
     types: [completed]
+  schedule:
+    - cron: '7,27,47 * * * *'
+  workflow_dispatch:
 permissions:
   actions: write
+concurrency:
+  group: ios-retry
+  cancel-in-progress: false
 jobs:
   retry:
-    if: github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
     steps:
       - name: Neu starten, falls kein Mac frei war
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          RID: ${{ github.event.workflow_run.id }}
         run: |
+          last=$(gh api "repos/$REPO/actions/workflows/ios-app.yml/runs?per_page=1" -q '.workflow_runs[0] | (.id|tostring)+" "+.status+" "+(.conclusion//"-")')
+          read RID STATUS CONCL <<< "$last"
+          echo "Letzter Bau: $RID $STATUS $CONCL"
+          [ "$STATUS" = "completed" ] || { echo "Läuft oder wartet noch."; exit 0; }
+          [ "$CONCL" = "failure" ] || { echo "Nichts zu tun."; exit 0; }
           steps=$(gh api repos/$REPO/actions/runs/$RID/jobs -q '[.jobs[].steps | length] | add')
           if [ "${steps:-0}" -gt 0 ]; then echo "Der Bau ist wirklich gelaufen und fehlgeschlagen – kein automatischer Neustart."; exit 0; fi
-          since=$(date -u -d '-6 hours' +%Y-%m-%dT%H:%M:%SZ)
-          n=$(gh api -X GET repos/$REPO/actions/workflows/ios-app.yml/runs -f created=">$since" -f per_page=50 -q '.workflow_runs | length')
-          if [ "$n" -ge 16 ]; then echo "Schon $n Versuche in 6 Stunden – Pause."; exit 0; fi
-          last=$(gh api repos/$REPO/actions/runs/$RID/jobs -q '.jobs[0].labels[0]')
-          next=macos-15-intel; [ "$last" = "macos-15-intel" ] && next=macos-15
-          echo "Kein Mac frei gewesen ($last). Neuer Versuch auf $next (Versuch $((n+1)))."
-          sleep 60
+          since=$(date -u -d '-24 hours' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api -X GET repos/$REPO/actions/workflows/ios-app.yml/runs -f created=">$since" -f per_page=100 -q '.workflow_runs | length')
+          if [ "$n" -ge 40 ]; then echo "Schon $n Versuche in 24 Stunden – Pause."; exit 0; fi
+          label=$(gh api repos/$REPO/actions/runs/$RID/jobs -q '.jobs[0].labels[0]')
+          next=macos-15-intel; [ "$label" = "macos-15-intel" ] && next=macos-15
+          echo "Kein Mac frei gewesen ($label). Neuer Versuch auf $next (Versuch $((n+1)))."
           gh api -X POST repos/$REPO/actions/workflows/ios-app.yml/dispatches -f ref=main -f "inputs[runner]=$next"
