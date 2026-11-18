@@ -1,0 +1,30 @@
+name: iPhone-App erneut versuchen
+# Wenn GitHub für den Bau keinen Mac frei hat (Job ohne einen einzigen Schritt abgebrochen),
+# startet dieser kleine Linux-Job den Bau nach einer Minute neu – abwechselnd auf Intel- und Apple-Mac.
+on:
+  workflow_run:
+    workflows: ['iPhone-App bauen']
+    types: [completed]
+permissions:
+  actions: write
+jobs:
+  retry:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Neu starten, falls kein Mac frei war
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RID: ${{ github.event.workflow_run.id }}
+        run: |
+          steps=$(gh api repos/$REPO/actions/runs/$RID/jobs -q '[.jobs[].steps | length] | add')
+          if [ "${steps:-0}" -gt 0 ]; then echo "Der Bau ist wirklich gelaufen und fehlgeschlagen – kein automatischer Neustart."; exit 0; fi
+          since=$(date -u -d '-6 hours' +%Y-%m-%dT%H:%M:%SZ)
+          n=$(gh api -X GET repos/$REPO/actions/workflows/ios-app.yml/runs -f created=">$since" -f per_page=50 -q '.workflow_runs | length')
+          if [ "$n" -ge 16 ]; then echo "Schon $n Versuche in 6 Stunden – Pause."; exit 0; fi
+          last=$(gh api repos/$REPO/actions/runs/$RID/jobs -q '.jobs[0].labels[0]')
+          next=macos-15-intel; [ "$last" = "macos-15-intel" ] && next=macos-15
+          echo "Kein Mac frei gewesen ($last). Neuer Versuch auf $next (Versuch $((n+1)))."
+          sleep 60
+          gh api -X POST repos/$REPO/actions/workflows/ios-app.yml/dispatches -f ref=main -f "inputs[runner]=$next"
