@@ -5,6 +5,7 @@
 class FKBridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(FKSoundPlugin())
+        bridge?.registerPluginInstance(FKLivePlugin())
     }
 }
 

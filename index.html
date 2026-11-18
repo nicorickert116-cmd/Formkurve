@@ -444,6 +444,12 @@ details.more[open] summary::after{transform:rotate(-135deg) translateY(-1px)}
 .ready-ex li span:first-child{display:block}
 .lib-h{margin:16px 0 2px}
 .lib-h:first-child{margin-top:4px}
+.plan-diff{border:1.5px solid var(--c)}
+.pd-row{display:flex;align-items:center;gap:12px;width:100%;padding:9px 0;min-height:48px;border-top:1px solid var(--line-2)}
+.pd-row:first-child{border-top:0}
+.pd-box{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;color:var(--on-c)}
+.pd-box.on{background:var(--c);border-color:var(--c)}
+.pd-box svg{width:16px;height:16px}
 </style>
 </head>
 <body>
@@ -1118,6 +1124,38 @@ async function findAutoBackup() {
   return null;
 }
 function nativeRestNotify() { const r = S.rest; nativeNotify(101, r && !r.fired ? r.end : null, r && r.kind === 'hold' ? 'Geschafft' : r && r.kind === 'switch' ? 'Wechselpause vorbei' : 'Pause vorbei', r ? (r.kind === 'hold' ? r.label + ': Zeit um' : r.kind === 'switch' ? r.say : r.say || r.label) : ''); }
+
+/* iPhone-App: Live-Aktivität. Pause, Halte-Timer und laufendes Training auf dem Sperrbildschirm und in der Dynamic Island.
+   Der Countdown läuft dort von iOS selbst weiter, auch wenn die App im Hintergrund schläft. */
+const fkLive = () => nativePlugin('FKLive');
+let _liveSig = '', _liveAt = 0, _liveBusy = false;
+function liveTarget(e, s) {
+  if (!s) return '';
+  const w = s.w != null ? s.w : null, wt = e.bw ? (w > 0 ? '+' + fmtKg(w) + ' kg' : 'Körpergewicht') : w != null ? fmtKg(w) + ' kg' : '';
+  const n = s.r != null ? s.r : s.tr, rt = n != null ? (isSec(e) ? n + ' s' : n + ' Wdh.') + (e.uni ? ' je Seite' : '') : '';
+  return [wt, rt].filter(Boolean).join(' × ');
+}
+function liveState(now) {
+  const a = S.active;
+  if (!a || a.kind !== 'kraft' || a.log || a.editing || !Array.isArray(a.ex) || pref('live') === false) return null;
+  const sets = a.ex.reduce((n, e) => n + e.sets.length, 0), done = a.ex.reduce((n, e) => n + e.sets.filter(s => s.done).length, 0);
+  let nx = null; for (const e of a.ex) { const i = e.sets.findIndex(s => !s.done); if (i >= 0) { nx = { e, i, s: e.sets[i] }; break; } }
+  const t = tpl(a.tpl), color = { push: '#E5564A', pull: '#4C82EE', box: '#B98C14', run: '#169F94' }[(t && t.color) || a.color] || '#E5564A';
+  const o = { sid: a.id, name: a.name || 'Training', color, done, total: sets, mode: 'train', title: 'Training läuft', start: a.start, end: a.start,
+    label: nx ? 'Als Nächstes: ' + nx.e.name : 'Alle Sätze geschafft', next: nx ? 'Satz ' + (nx.i + 1) + ' von ' + nx.e.sets.length + (liveTarget(nx.e, nx.s) ? ' · ' + liveTarget(nx.e, nx.s) : '') : 'Tippe auf „Beenden“' };
+  const r = S.rest;
+  if (r && r.kind === 'hold') Object.assign(o, { mode: 'hold', title: now < r.start ? 'Gleich geht’s los' : 'Halten', label: r.label, next: r.sec + ' s halten', start: r.start, end: r.end });
+  else if (r) Object.assign(o, { mode: r.kind === 'switch' ? 'switch' : 'rest', title: r.kind === 'switch' ? 'Wechselpause' : 'Pause', start: r.end - r.total * 1000, end: r.end });
+  return o;
+}
+function liveSync(now, force) {
+  const P = fkLive(); if (!P || _liveBusy) return;
+  const st = liveState(now), sig = st ? JSON.stringify(st) : 'none';
+  if (!force && sig === _liveSig) return;            // nur bei Änderungen, sonst würde eine weggewischte Anzeige sofort wiederkommen
+  if (sig === 'none' && _liveSig === '' && !force) { _liveSig = 'none'; return; }
+  _liveSig = sig; _liveAt = now; _liveBusy = true;
+  Promise.resolve(st ? P.update(st) : P.end()).then(res => { S.liveErr = res && res.ok === false ? res.error || 'aus' : null; }).catch(() => {}).finally(() => { _liveBusy = false; });
+}
 function audio() { if (pref('sound') === false) return null; unlockAudio(); return AC; }
 function tone(c, f, t, dur, vol, type = 'sine') {
   const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f;
@@ -1305,7 +1343,12 @@ function setExUni(e, v) {
 }
 function removeSet(ei) { const e = S.active.ex[ei]; if (e.sets.length > 1) { const p = e.sets.pop(); const l = e.sets[e.sets.length - 1]; if (p.f && e.amrap && !l.done) l.f = true; touch(); } }
 function removeExercise(ei) { S.active.ex.splice(ei, 1); touch(); }
-function addExercise(cfg) { S.active.ex.push(buildExercise(cfg, S.active.id)); S.sheet = null; touch(); }
+function addExercise(cfg) {
+  const a = S.active, t = tpl(a.tpl), inPlan = t && (t.exercises || []).some(c => c.id === cfg.id);
+  a.ex.push(buildExercise(cfg, a.id)); S.sheet = null;
+  if (!inPlan && !a.editing) toast(cfg.name + ' ist drin. Beim Beenden kannst du sie für nächstes Mal übernehmen.');
+  touch();
+}
 function toggleSet(ei, si) {
   const a = S.active, e = a.ex[ei], s = e.sets[si];
   if (s.done) { s.done = false; s.pr = false; touch(); return; }
@@ -1363,6 +1406,35 @@ function holdDone(early) {
   toggleSet(r.ei, r.si);
 }
 
+/* Was wurde heute an der Einheit geändert (Übungen dazu/weg, Satzzahl, Reihenfolge)?
+   Wird beim Beenden angeboten, damit es beim nächsten Mal wieder so ist. */
+function planDiff(a) {
+  const t = tpl(a.tpl); if (!t || a.kind !== 'kraft' || a.editing || !Array.isArray(t.exercises)) return null;
+  const plan = t.exercises, ids = plan.map(c => c.id), items = [];
+  const cfgOf = e => ({ ...(exFromLib(e.id) || exd(e.id, e.name, 3, e.lo, e.hi, e.inc, e.rest, { bar: e.bar, bw: e.bw, group: e.group, typ: e.typ, uni: e.uni, sec: isSec(e) })),
+    name: e.name, sets: e.sets.length, lo: e.lo, hi: e.hi, inc: e.inc, rest: e.rest, restManual: !!e.restManual, bar: !!e.bar, bw: !!e.bw, uni: !!e.uni, ...(e.amrap ? { amrap: true } : {}), start: e.startW != null ? e.startW : null });
+  a.ex.forEach(e => { if (!ids.includes(e.id) && e.sets.some(s => s.done)) items.push({ k: 'add', id: e.id, on: true, text: e.name, sub: 'neu dazu · ' + e.sets.length + ' Sätze', cfg: cfgOf(e) }); });
+  plan.forEach(c => { if (!a.ex.some(e => e.id === c.id)) items.push({ k: 'rm', id: c.id, on: false, text: c.name, sub: 'heute weggelassen · aus dem Plan nehmen' }); });
+  a.ex.forEach(e => { const c = plan.find(x => x.id === e.id); if (c && e.sets.length !== c.sets) items.push({ k: 'sets', id: e.id, n: e.sets.length, on: true, text: e.name, sub: e.sets.length + ' statt ' + c.sets + ' Sätze' }); });
+  const common = a.ex.map(e => e.id).filter(id => ids.includes(id));
+  if (common.join() !== ids.filter(id => common.includes(id)).join()) items.push({ k: 'order', on: true, text: 'Reihenfolge', sub: 'so wie heute' });
+  return items.length ? { tpl: t.id, name: t.name, order: a.ex.map(e => e.id), items } : null;
+}
+function applyPlanDiff(p, on) {
+  const t = tpl(p.tpl); if (!t) return 0;
+  let list = t.exercises.slice(), n = 0;
+  const pos = id => p.order.indexOf(id), sel = p.items.filter((x, i) => on[i]);
+  sel.forEach(x => {
+    if (x.k === 'rm') { list = list.filter(c => c.id !== x.id); n++; }
+    if (x.k === 'sets') { const c = list.find(c => c.id === x.id); if (c) { c.sets = x.n; n++; } }
+  });
+  if (sel.some(x => x.k === 'order')) { const old = list.map(c => c.id), k = id => (pos(id) < 0 ? 1000 + old.indexOf(id) : pos(id)); list.sort((x, y) => k(x.id) - k(y.id)); n++; }
+  sel.filter(x => x.k === 'add' && !list.some(c => c.id === x.id)).forEach(x => {
+    const before = p.order.slice(0, Math.max(0, pos(x.id))).reverse().find(id => list.some(c => c.id === id));   // hinter die Übung, die heute davor dran war
+    list.splice(before ? list.findIndex(c => c.id === before) + 1 : 0, 0, clone(x.cfg)); n++;
+  });
+  t.exercises = list; saveSettings(); return n;
+}
 function cleanSession(a) {
   const o = clone(a);
   const dur = a.durMin != null ? a.durMin : a.log ? defaultDur(a) : null;
@@ -1385,7 +1457,7 @@ function finishSession() {
   const a = S.active; if (!a) return;
   if (a.kind === 'lauf' && a.run && a.run.live && a.run.live.on) trackStop();
   const err = validateActive(a); if (err) { toast(err); return; }
-  const out = cleanSession(a);
+  const out = cleanSession(a), plan = planDiff(a);
   const nextUp = out.kind === 'kraft' ? out.ex.map(e => ({ e, s: suggest({ sets: (a.ex.find(x => x.id === e.id)?.sets.length) || e.sets.length, lo: e.lo, hi: e.hi, inc: e.inc, bw: e.bw }, e.sets) })).filter(x => x.s.mode === 'up') : [];
   const prs = out.kind === 'kraft' ? out.ex.filter(e => e.sets.some(s => s.pr)).map(e => e.name) : [];
   S.sessions = { ...S.sessions, [out.id]: out };
@@ -1393,7 +1465,7 @@ function finishSession() {
   S.active = null; S.rest = null; nativeRestNotify(); S.showWorkout = false;
   if (S.bt.running) { S.bt.running = false; S.bt.phase = 'idle'; }
   saveActive(true); wakeOff();
-  S.sheet = { type: 'summary', id: out.id, edited: !!a.editing, nextUp: nextUp.map(x => ({ name: x.e.name, from: x.s.prevW, to: x.s.w, bw: x.e.bw })), prs };
+  S.sheet = { type: 'summary', id: out.id, edited: !!a.editing, plan, nextUp: nextUp.map(x => ({ name: x.e.name, from: x.s.prevW, to: x.s.w, bw: x.e.bw })), prs };
   planReminders(); autoBackup(true);
   commit();
 }
@@ -1463,6 +1535,7 @@ let _lastSec = 0;
 setInterval(() => {
   const now = Date.now(); let ch = false;
   quietForeground(now);
+  liveSync(now);
   if (S.rest && S.rest.kind === 'hold') {
     const r = S.rest;
     if (!r.go) { const pl = r.start - now; if (pl > 0) { const sc = Math.ceil(pl / 1000); if (sc <= 3 && sc !== r.pcd) { r.pcd = sc; sfx('tick'); } } else { r.go = true; sfx('last'); buzz(120); say('Los'); } }
@@ -2104,7 +2177,7 @@ function ExCard({ a, e, ei, now }) {
     ${more && html`<div class="card flat stack" style="gap:2px;padding:6px 12px">
       <${Toggle} on=${!!e.uni} label="Einarmig" hint="Wiederholungen für links und rechts getrennt" onChange=${v => setExUni(e, v)} />
       <hr class="hr" /><${Toggle} on=${!!e.amrap} label="Letzter Satz bis zum Maximum" hint="So viele saubere Wiederholungen wie möglich" onChange=${v => setExAmrap(e, v)} />
-      <hr class="hr" /><div class="row between" style="padding:8px 0"><span class="small muted">Nur heute weglassen</span><${Confirm} label="Übung entfernen" yes="Entfernen" onYes=${() => removeExercise(ei)} /></div>
+      <hr class="hr" /><div class="row between" style="padding:8px 0"><span class="small muted">Heute weglassen</span><${Confirm} label="Übung entfernen" yes="Entfernen" onYes=${() => removeExercise(ei)} /></div>
     </div>`}
   </div>`;
 }
@@ -2262,6 +2335,7 @@ function SummarySheet({ sh, onClose }) {
   return html`<${Sheet} onClose=${onClose} label="Gespeichert">
     <div class=${'row t-' + s.color}><span class="disc lg"></span><div class="grow"><div class="eyebrow">${sh.edited ? 'Aktualisiert' : 'Gespeichert'} · ${dateShort(s.date)}</div><div class="h1" style="font-size:40px">${s.name}</div></div></div>
     <div class="grid3">${tiles.map(([l, v, g]) => html`<div class="tile"><span class="eyebrow">${l}</span><b class=${g ? 'good' : ''} style="font-size:21px">${v}</b></div>`)}</div>
+    ${sh.plan && html`<${PlanDiffCard} sh=${sh} />`}
     <div class="card flat stack" style="gap:8px"><div class="eyebrow">Im Vergleich zum letzten Mal</div>
       ${up.length ? up.map(x => html`<div class="row between small" style="gap:10px;align-items:baseline"><span style="min-width:0">${x.name}${x.pr ? html` <span class="pr">Rekord</span>` : null}</span><span class="good" style="text-align:right;white-space:nowrap">▲ ${x.text}</span></div>`)
         : html`<p class="small" style="margin:0">${hasPrev ? 'Diesmal kein Plus, das ist normal. Dranbleiben zahlt sich aus.' : 'Deine erste Einheit dieser Art. Ab dem nächsten Mal siehst du hier, was besser geworden ist.'}</p>`}
@@ -2272,6 +2346,20 @@ function SummarySheet({ sh, onClose }) {
       ${sh.nextUp.map(x => html`<div class="row between small"><span>${x.name}</span><span class="data good">${x.bw ? (x.from > 0 ? '+' + fmtKg(x.from) : 'KG') : fmtKg(x.from)} → ${x.bw ? '+' : ''}${fmtKg(x.to)} kg</span></div>`)}</div>` : null}
     <button class="btn primary block" onClick=${onClose}>Fertig</button>
   </${Sheet}>`;
+}
+/* Änderungen von heute für nächstes Mal in die Einheit übernehmen */
+function PlanDiffCard({ sh }) {
+  const p = sh.plan, [on, setOn] = useState(() => p.items.map(x => x.on));
+  if (sh.planDone) return html`<div class="card flat row" style="gap:10px"><span class="okdot">${I.check}</span><span class="small">${sh.planDone === 'saved' ? 'Gespeichert. ' + p.name + ' startet nächstes Mal so wie heute.' : 'Nur für heute. ' + p.name + ' bleibt wie geplant.'}</span></div>`;
+  const any = on.some(Boolean);
+  return html`<div class=${'card stack plan-diff t-' + ((tpl(p.tpl) || {}).color || 'push')} style="gap:10px">
+    <div><div class="h3">Für nächstes Mal übernehmen?</div><p class="small muted" style="margin:4px 0 0">Du hast ${p.name} heute verändert. Was soll beim nächsten Mal wieder so sein?</p></div>
+    <div class="stack" style="gap:0">${p.items.map((x, i) => html`<button class="pd-row" role="checkbox" aria-checked=${on[i] ? 'true' : 'false'} onClick=${() => setOn(on.map((v, j) => (j === i ? !v : v)))}>
+        <span class=${'pd-box' + (on[i] ? ' on' : '')} aria-hidden="true">${on[i] ? I.check : null}</span>
+        <span class="grow" style="text-align:left;min-width:0"><b style="font-weight:600">${x.text}</b><span class="tiny faint" style="display:block">${x.sub}</span></span></button>`)}</div>
+    <div class="row" style="gap:8px"><button class="btn c grow" disabled=${!any} onClick=${() => { applyPlanDiff(p, on); sh.planDone = 'saved'; commit(); }}>Übernehmen</button>
+      <button class="btn grow" onClick=${() => { sh.planDone = 'today'; commit(); }}>Nur heute</button></div>
+  </div>`;
 }
 function PlateSheet({ sh, onClose }) {
   const bar = Number(S.settings.prefs.bar) || 20;
@@ -3151,6 +3239,8 @@ function Plan() {
         <span class="small muted">${sideDaysLeft() > 0 ? 'Läuft in ' + sideDaysLeft() + (sideDaysLeft() === 1 ? ' Tag' : ' Tagen') + ' ab.' : 'Läuft heute ab.'} Einen Tag vorher kommt eine Erinnerung.</span></div>
         <button class="btn sm" onClick=${sideRefreshed}>Heute erneuert</button></div>
       <hr class="hr" />
+      <${Toggle} on=${p.live !== false} label="Timer auf dem Sperrbildschirm" hint=${S.liveErr ? 'Gerade aus. Einschalten: iPhone-Einstellungen → Formkurve → Live-Aktivitäten.' : 'Pause, Halte-Timer und nächster Satz auf dem Sperrbildschirm und in der Dynamic Island'} onChange=${v => setPref('live', v)} />
+      <hr class="hr" />
       <div class="row between" style="gap:12px;align-items:flex-start"><div class="stack" style="gap:2px;min-width:0"><b class="small">Automatisches Backup</b>
         <span class="small muted">Täglich, die letzten 7 Tage bleiben gespeichert.${S.meta.autoBackupAt ? ' Zuletzt ' + whenAgo(S.meta.autoBackupAt) + '.' : ''}</span></div>
         <button class="btn sm" onClick=${async () => { await autoBackup(true); toast(S.meta.autoBackupAt && Date.now() - S.meta.autoBackupAt < 60000 ? 'Backup gespeichert' : 'Backup hat nicht geklappt'); }}>Jetzt sichern</button></div>
@@ -3174,7 +3264,7 @@ function Plan() {
         <p class="tiny faint" style="margin:0">„Plan neu einrichten“ behält deine Trainings im Verlauf.</p>
       </div></details>
     </section>
-    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.7.1</p>
+    <p class="tiny faint" style="text-align:center;margin:6px 0 0">Formkurve 1.8.0</p>
   </div>`;
 }
 /* ---------- fertige Einheiten ---------- */

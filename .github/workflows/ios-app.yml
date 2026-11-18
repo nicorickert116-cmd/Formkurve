@@ -33,6 +33,10 @@ jobs:
       - name: Abhängigkeiten installieren
         working-directory: app
         run: npm install --no-audit --no-fund
+      - name: Werkzeug für das Xcode-Projekt (xcodeproj)
+        run: |
+          sudo gem install xcodeproj --no-document || gem install --user-install xcodeproj --no-document
+          ruby -e 'require "xcodeproj"; puts "xcodeproj " + Xcodeproj::VERSION'
       - name: iOS-Projekt erzeugen und anpassen
         working-directory: app
         run: |
@@ -44,8 +48,14 @@ jobs:
         run: |
           if [ -d App.xcworkspace ]; then SRC=(-workspace App.xcworkspace); else SRC=(-project App.xcodeproj); fi
           xcodebuild "${SRC[@]}" -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -40
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build > build.log 2>&1 \
+            || { grep -E "error:|fatal" build.log | head -80; tail -30 build.log; exit 1; }
+          tail -15 build.log
           rm -rf Payload && mkdir Payload && cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          ls Payload/App.app/PlugIns
+          test -f Payload/App.app/PlugIns/FKTimer.appex/FKTimer
+          /usr/libexec/PlistBuddy -c "Print :NSExtension" Payload/App.app/PlugIns/FKTimer.appex/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :NSSupportsLiveActivities" Payload/App.app/Info.plist
           zip -qry Formkurve.ipa Payload
           ls -la Formkurve.ipa
       - uses: actions/upload-artifact@v4

@@ -16,6 +16,8 @@ pb "Add :ITSAppUsesNonExemptEncryption bool false"
 # Auto-Backups (Ordner „Dokumente“ der App) in der Dateien-App sichtbar machen: Dateien → Auf meinem iPhone → Formkurve
 pb "Add :UIFileSharingEnabled bool true"
 pb "Add :LSSupportsOpeningDocumentsInPlace bool true"
+# Live-Aktivität: Pausen-Timer auf dem Sperrbildschirm und in der Dynamic Island
+pb "Add :NSSupportsLiveActivities bool true"
 /usr/libexec/PlistBuddy -c "Print" "$P" | grep -E "Location|UIBackgroundModes|location|WKAppBound|github|FileSharing|OpeningDocuments" || true
 
 # Töne auch im Stummmodus, gemischt mit laufender Musik
@@ -29,6 +31,15 @@ grep -n "AVAudioSession\|import AVFoundation" "$AD"
 
 # Töne und Sprachansage nativ abspielen (Plugin „FKSound“ + eigener Bridge-ViewController)
 grep -q "FKSoundPlugin" "$AD" || cat native/FKSound.swift >> "$AD"
+grep -q "import ActivityKit" "$AD" || sed -i '' 's/^import UIKit$/import UIKit\
+import ActivityKit/' "$AD"
+grep -q "struct FKAttributes" "$AD" || { echo; grep -v '^import ' native/FKTimer/FKAttributes.swift; } >> "$AD"
+grep -q "FKLivePlugin: CAPPlugin" "$AD" || cat native/FKLive.swift >> "$AD"
+grep -n "^import\|struct FKAttributes\|class FKLivePlugin\|registerPluginInstance" "$AD"
+
+# Widget-Erweiterung „FKTimer“ (zeigt die Live-Aktivität an) ins Xcode-Projekt einbauen
+rm -rf ios/App/FKTimer && cp -R native/FKTimer ios/App/FKTimer
+ruby add-widget.rb
 SB=ios/App/App/Base.lproj/Main.storyboard
 sed -i '' 's/customClass="CAPBridgeViewController" customModule="Capacitor"/customClass="FKBridgeViewController" customModule="App" customModuleProvider="target"/' "$SB"
 grep -n "customClass" "$SB"
